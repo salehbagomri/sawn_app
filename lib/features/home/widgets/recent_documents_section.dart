@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/models/document_model.dart';
+import '../../../core/providers/document_provider.dart';
 
-class RecentDocumentsSection extends StatelessWidget {
+class RecentDocumentsSection extends ConsumerWidget {
   const RecentDocumentsSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recentDocs = ref.watch(recentDocumentsProvider);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -23,44 +30,104 @@ class RecentDocumentsSection extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  context.go('/main/documents');
+                },
                 child: const Text('عرض الكل'),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Recent Documents List
-          _RecentDocumentItem(
-            title: 'جواز السفر',
-            category: 'شخصي',
-            date: 'أمس',
-            icon: Icons.card_travel_outlined,
-            color: AppColors.categoryPersonal,
-          ),
-          const SizedBox(height: 12),
-          _RecentDocumentItem(
-            title: 'فاتورة الكهرباء',
-            category: 'السكن',
-            date: 'قبل 3 أيام',
-            icon: Icons.receipt_outlined,
-            color: AppColors.categoryHome,
-          ),
-          const SizedBox(height: 12),
-          _RecentDocumentItem(
-            title: 'عقد الإيجار',
-            category: 'السكن',
-            date: 'قبل أسبوع',
-            icon: Icons.description_outlined,
-            color: AppColors.categoryHome,
-          ),
-          const SizedBox(height: 12),
-          _RecentDocumentItem(
-            title: 'تأمين السيارة',
-            category: 'السيارة',
-            date: 'قبل أسبوعين',
-            icon: Icons.security_outlined,
-            color: AppColors.categoryCar,
+          recentDocs.when(
+            data: (documents) {
+              if (documents.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.surfaceVariant),
+                  ),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.folder_open_outlined,
+                          color: AppColors.textTertiary,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'لا توجد مستندات بعد',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () {
+                            context.push('/add-document');
+                          },
+                          icon: const Icon(Icons.add),
+                          label: const Text('أضف مستندك الأول'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return Column(
+                children: documents.map((doc) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _RecentDocumentItem(
+                      document: doc,
+                      onTap: () {
+                        context.push('/document/${doc.id}');
+                      },
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => Column(
+              children: List.generate(
+                3,
+                (index) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Container(
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.surfaceVariant),
+                    ),
+                    child: const Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            error: (_, __) => Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'خطأ في تحميل المستندات',
+                style: TextStyle(color: AppColors.error),
+              ),
+            ),
           ),
         ],
       ),
@@ -69,26 +136,22 @@ class RecentDocumentsSection extends StatelessWidget {
 }
 
 class _RecentDocumentItem extends StatelessWidget {
-  final String title;
-  final String category;
-  final String date;
-  final IconData icon;
-  final Color color;
+  final DocumentModel document;
+  final VoidCallback onTap;
 
   const _RecentDocumentItem({
-    required this.title,
-    required this.category,
-    required this.date,
-    required this.icon,
-    required this.color,
+    required this.document,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = _getCategoryColor(document.category);
+    final icon = _getCategoryIcon(document.category);
+    final dateText = _formatDate(document.updatedAt);
+
     return GestureDetector(
-      onTap: () {
-        // TODO: Navigate to document details
-      },
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -104,7 +167,7 @@ class _RecentDocumentItem extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -118,17 +181,34 @@ class _RecentDocumentItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          document.title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (document.isFavorite)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 8),
+                          child: Icon(
+                            Icons.star,
+                            color: AppColors.warning,
+                            size: 16,
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    category,
+                    document.category.nameAr,
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textTertiary,
@@ -138,7 +218,7 @@ class _RecentDocumentItem extends StatelessWidget {
               ),
             ),
             Text(
-              date,
+              dateText,
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.textTertiary,
@@ -154,5 +234,49 @@ class _RecentDocumentItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Color _getCategoryColor(DocumentCategory category) {
+    switch (category) {
+      case DocumentCategory.personal:
+        return AppColors.categoryPersonal;
+      case DocumentCategory.car:
+        return AppColors.categoryCar;
+      case DocumentCategory.work:
+        return AppColors.categoryWork;
+      case DocumentCategory.home:
+        return AppColors.categoryHome;
+    }
+  }
+
+  IconData _getCategoryIcon(DocumentCategory category) {
+    switch (category) {
+      case DocumentCategory.personal:
+        return Icons.person_outlined;
+      case DocumentCategory.car:
+        return Icons.directions_car_outlined;
+      case DocumentCategory.work:
+        return Icons.work_outlined;
+      case DocumentCategory.home:
+        return Icons.home_outlined;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return 'اليوم';
+    } else if (difference.inDays == 1) {
+      return 'أمس';
+    } else if (difference.inDays < 7) {
+      return 'قبل ${difference.inDays} أيام';
+    } else if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return weeks == 1 ? 'قبل أسبوع' : 'قبل $weeks أسابيع';
+    } else {
+      return DateFormat('d MMM', 'ar').format(date);
+    }
   }
 }

@@ -3,9 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
-import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 import '../constants/app_constants.dart';
+import 'google_sign_in_service.dart';
 
 /// Google Drive service for file operations
 class GoogleDriveService {
@@ -13,34 +13,47 @@ class GoogleDriveService {
   drive.DriveApi? _driveApi;
 
   GoogleDriveService({GoogleSignIn? googleSignIn})
-      : _googleSignIn = googleSignIn ??
-            GoogleSignIn(
-              scopes: [
-                'email',
-                'profile',
-                'https://www.googleapis.com/auth/drive.file',
-              ],
-            );
+      : _googleSignIn = googleSignIn ?? GoogleSignInService().googleSignIn;
 
   /// Initialize Drive API
   Future<bool> initialize() async {
     try {
+      debugPrint('GoogleDriveService: Initializing...');
+      debugPrint('GoogleDriveService: Current user: ${_googleSignIn.currentUser?.email}');
+
+      if (_googleSignIn.currentUser == null) {
+        debugPrint('GoogleDriveService: No signed-in user found');
+        return false;
+      }
+
       final httpClient = await _googleSignIn.authenticatedClient();
       if (httpClient == null) {
-        debugPrint('Failed to get authenticated client');
+        debugPrint('GoogleDriveService: Failed to get authenticated client');
         return false;
       }
 
       _driveApi = drive.DriveApi(httpClient);
+      debugPrint('GoogleDriveService: Drive API initialized successfully');
       return true;
-    } catch (e) {
-      debugPrint('Error initializing Drive API: $e');
+    } catch (e, stackTrace) {
+      debugPrint('GoogleDriveService: Error initializing Drive API: $e');
+      debugPrint('GoogleDriveService: Stack trace: $stackTrace');
       return false;
     }
   }
 
   /// Check if Drive API is ready
   bool get isReady => _driveApi != null;
+
+  /// Sign out from Google
+  Future<void> signOut() async {
+    try {
+      await _googleSignIn.signOut();
+      _driveApi = null;
+    } catch (e) {
+      debugPrint('Error signing out from Google: $e');
+    }
+  }
 
   /// Get or create the main Sawn folder
   Future<String?> getOrCreateMainFolder() async {

@@ -82,9 +82,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.documents,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: DocumentsScreen(),
-            ),
+            pageBuilder: (context, state) {
+              final focusSearch = state.uri.queryParameters['search'] == 'true';
+              return NoTransitionPage(
+                child: DocumentsScreen(focusSearch: focusSearch),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.reminders,

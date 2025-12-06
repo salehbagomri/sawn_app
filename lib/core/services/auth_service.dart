@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_model.dart';
+import 'google_sign_in_service.dart';
 
 /// Authentication service using Google Sign-In
 class AuthService {
@@ -17,14 +18,7 @@ class AuthService {
     GoogleSignIn? googleSignIn,
     SupabaseClient? supabase,
     FlutterSecureStorage? secureStorage,
-  })  : _googleSignIn = googleSignIn ??
-            GoogleSignIn(
-              scopes: [
-                'email',
-                'profile',
-                'https://www.googleapis.com/auth/drive.file',
-              ],
-            ),
+  })  : _googleSignIn = googleSignIn ?? GoogleSignInService().googleSignIn,
         _supabase = supabase ?? Supabase.instance.client,
         _secureStorage = secureStorage ?? const FlutterSecureStorage();
 
@@ -82,7 +76,8 @@ class AuthService {
       final googleUser = await _googleSignIn.signInSilently();
 
       if (googleUser == null) {
-        return AuthResult.noSession();
+        // No Google session, check if we have saved credentials for offline mode
+        return await _checkOfflineSession();
       }
 
       _currentGoogleUser = googleUser;
@@ -98,11 +93,70 @@ class AuthService {
       }
 
       _currentUser = user;
+
+      // Save user data for offline access
+      await _saveUserDataForOffline(user);
+
       return AuthResult.success(user);
     } catch (e) {
       debugPrint('Error checking auth state: $e');
+      // If network error, try offline session
+      if (e.toString().contains('network') ||
+          e.toString().contains('connection') ||
+          e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup')) {
+        return await _checkOfflineSession();
+      }
       return AuthResult.error(e.toString());
     }
+  }
+
+  /// Check for offline session using cached data
+  Future<AuthResult> _checkOfflineSession() async {
+    try {
+      final userId = await _secureStorage.read(key: 'user_id');
+      final googleId = await _secureStorage.read(key: 'google_id');
+      final userName = await _secureStorage.read(key: 'user_name');
+      final userEmail = await _secureStorage.read(key: 'user_email');
+
+      if (userId == null || googleId == null) {
+        return AuthResult.noSession();
+      }
+
+      // Create user from cached data
+      _currentUser = UserModel(
+        id: userId,
+        googleId: googleId,
+        email: userEmail ?? '',
+        name: userName ?? 'مستخدم',
+        avatarUrl: await _secureStorage.read(key: 'user_avatar'),
+        driveFolderId: await _secureStorage.read(key: 'drive_folder_id'),
+        pinEnabled: (await _secureStorage.read(key: 'pin_enabled')) == 'true',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      debugPrint('AuthService: Restored offline session for user: $userId');
+      return AuthResult.success(_currentUser!);
+    } catch (e) {
+      debugPrint('Error checking offline session: $e');
+      return AuthResult.noSession();
+    }
+  }
+
+  /// Save user data for offline access
+  Future<void> _saveUserDataForOffline(UserModel user) async {
+    await _secureStorage.write(key: 'user_id', value: user.id);
+    await _secureStorage.write(key: 'google_id', value: user.googleId);
+    await _secureStorage.write(key: 'user_email', value: user.email);
+    await _secureStorage.write(key: 'user_name', value: user.name);
+    if (user.avatarUrl != null) {
+      await _secureStorage.write(key: 'user_avatar', value: user.avatarUrl);
+    }
+    if (user.driveFolderId != null) {
+      await _secureStorage.write(key: 'drive_folder_id', value: user.driveFolderId);
+    }
+    await _secureStorage.write(key: 'pin_enabled', value: user.pinEnabled.toString());
   }
 
   /// Get Google auth headers for API calls
@@ -246,16 +300,18 @@ class AuthService {
   /// Save auth state locally
   Future<void> _saveAuthState() async {
     if (_currentUser == null) return;
-
-    await _secureStorage.write(key: 'user_id', value: _currentUser!.id);
-    await _secureStorage.write(
-        key: 'google_id', value: _currentUser!.googleId);
+    await _saveUserDataForOffline(_currentUser!);
   }
 
   /// Clear auth state
   Future<void> _clearAuthState() async {
     await _secureStorage.delete(key: 'user_id');
     await _secureStorage.delete(key: 'google_id');
+    await _secureStorage.delete(key: 'user_email');
+    await _secureStorage.delete(key: 'user_name');
+    await _secureStorage.delete(key: 'user_avatar');
+    await _secureStorage.delete(key: 'drive_folder_id');
+    await _secureStorage.delete(key: 'pin_enabled');
     await _secureStorage.delete(key: 'pin_code');
   }
 
