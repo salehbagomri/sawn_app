@@ -1,0 +1,127 @@
+name: sawn_app
+description: صَوْن - تطبيق إدارة المستندات الذكي
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+
+  # Navigation
+  go_router: ^13.0.0
+
+  # Backend & Database
+  supabase_flutter: ^2.3.0
+
+  # Google Sign-In & Drive API
+  google_sign_in: ^6.2.1
+  googleapis: ^13.2.0
+  googleapis_auth: ^1.6.0
+  extension_google_sign_in_as_googleapis_auth: ^2.0.12
+  http: ^1.2.0
+
+  # Local Storage
+  shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.0.0
+  hive_flutter: ^1.1.0
+
+  # UI Components
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
+  flutter_animate: ^4.3.0
+
+  # Camera & Files
+  image_picker: ^1.0.7
+  file_picker: ^8.0.0
+  camera: ^0.10.5+9
+  # pdf_render removed - using native PDF viewer instead
+  pdfx: ^2.6.0
+
+  # Document Scanner
+  cunning_document_scanner: ^1.4.0
+
+  # Security
+  local_auth: ^2.1.8
+
+  # Notifications (local only - no Firebase)
+  flutter_local_notifications: ^18.0.0
+
+  # OCR & AI
+  google_mlkit_text_recognition: ^0.11.0
+
+  # Utilities
+  intl: ^0.20.2
+  uuid: ^4.2.2
+  path_provider: ^2.1.2
+  permission_handler: ^12.0.1
+  url_launcher: ^6.2.3
+  connectivity_plus: ^6.0.3
+
+  # Icons
+  iconsax: ^0.0.8
+
+  # Google Fonts (for Rubik and Poppins)
+  google_fonts: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  riverpod_generator: ^2.3.9
+  build_runner: ^2.4.8
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+
+  fonts:
+    - family: Rubik
+      fonts:
+        - asset: assets/fonts/Rubik-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Rubik-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Rubik-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Rubik-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Rubik-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Rubik-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Rubik-Black.ttf
+          weight: 900
+        - asset: assets/fonts/Rubik-LightItalic.ttf
+          weight: 300
+          style: italic
+        - asset: assets/fonts/Rubik-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/Rubik-MediumItalic.ttf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/Rubik-SemiBoldItalic.ttf
+          weight: 600
+          style: italic
+        - asset: assets/fonts/Rubik-BoldItalic.ttf
+          weight: 700
+          style: italic
+        - asset: assets/fonts/Rubik-ExtraBoldItalic.ttf
+          weight: 800
+          style: italic
+        - asset: assets/fonts/Rubik-BlackItalic.ttf
+          weight: 900
+          style: italic

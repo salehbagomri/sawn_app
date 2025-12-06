@@ -1,0 +1,172 @@
+# Sawn App - Cursor Rules (Complete)
+
+## Project Overview
+**Name:** صَوْن (Sawn)
+**Tagline:** "كل مستنداتك في جيبك"
+**Version:** v1.0 - Free (subscriptions later)
+**Design:** Clean/Minimal (Google-style)
+
+## Architecture
+```
+Google Drive  →  File storage (unlimited)
+Supabase      →  Metadata only
+Local Storage →  Offline cache (unlimited)
+```
+
+## Key Decisions
+
+### Authentication
+- Google Sign-In ONLY
+- PIN is OPTIONAL
+- Unlimited PIN attempts
+- "Forgot PIN" → Google verification → new PIN
+
+### Documents
+- Unlimited documents (free)
+- Unlimited storage (user's Drive)
+- Two-sided scan: ASK user (not automatic)
+- OCR fail: Manual input
+- Notes field: YES
+- Favorites: YES
+- Filter: YES
+
+### Reminders
+- Ask user: "How many reminders?"
+- Multiple reminders per document
+- Options: 7, 30, 60, 90 days, custom
+
+### Offline
+- Unlimited local storage
+- Any file size
+- "Download for offline" option
+- Auto-sync when online
+
+### Sharing
+- No watermark
+- No share history
+- No blur option
+- Just warning message
+
+### Data
+- No old versions (replace only)
+- No Absher links
+- Restore: Ask user (restore or new)
+- Deleted Drive folder: Notify + create new
+
+### Account Deletion
+- Reason dropdown + optional notes
+- Keeps Drive folder (user deletes manually)
+
+## Design System
+
+### Colors (Clean)
+```dart
+primary: #1A73E8        // Google Blue (use sparingly)
+background: #FFFFFF
+surface: #FAFAFA
+textPrimary: #202124
+textSecondary: #5F6368
+border: #DADCE0
+iconPrimary: #5F6368
+iconActive: #1A73E8
+```
+
+### Typography
+- Arabic: Rubik
+- English: Poppins
+- Headline: 24px Medium
+- Body: 14px Regular
+- Caption: 12px Regular
+
+### Components
+- Cards: white, 1px border, no shadow, 12px radius
+- Buttons: no shadow, 8px radius
+- Icons: Outlined only, 24px
+- Spacing: 8, 12, 16, 20, 24px
+
+## Database (Supabase)
+
+### documents table
+```sql
+id, user_id, category_id, title, document_type,
+document_number, issue_date, expiry_date,
+notes,           -- NEW
+is_favorite,     -- NEW
+is_offline,      -- NEW
+drive_file_id, drive_file_url, extracted_data,
+created_at, updated_at
+```
+
+### reminders table
+```sql
+id, document_id, user_id, remind_date,
+days_before, is_sent, is_read, created_at
+```
+
+### deletion_reasons table
+```sql
+id, reason, notes, created_at
+```
+
+## Home Screen Layout
+```
+1. Header: "مرحباً، [name]" + expiring count
+2. Search bar
+3. Favorites section (shortcuts)
+4. Expiring soon section
+5. Categories grid
+6. Bottom nav: Home | Files | (+) | Settings
+```
+
+## Document Flow
+```
+1. Choose: Camera / PDF / Gallery
+2. Capture/Select
+3. Ask: "Add another image?" (back side)
+4. OCR analysis (or manual if fails)
+5. Fill details + notes
+6. Ask: "How many reminders?"
+7. Save to Drive + Supabase + Local
+```
+
+## Onboarding
+- 3 screens
+- Include brief Drive explanation
+- Show only on first install
+
+## Tech Stack
+- Flutter 3.x
+- google_sign_in
+- googleapis (Drive)
+- Supabase
+- Riverpod
+- GoRouter
+- Google ML Kit (OCR)
+- Hive/Isar (local storage)
+
+## Current Status
+- Clean theme: ✅
+- Auth (Google): ❌ TODO
+- Drive integration: ❌ TODO
+- Documents CRUD: ❌ TODO
+- Reminders: ❌ TODO
+- Offline mode: ❌ TODO
+
+## DO's
+✓ Ask about reminders count
+✓ Add notes field
+✓ Add favorites
+✓ Add filter
+✓ Store unlimited offline
+✓ Download any size
+✓ Keep PIN optional
+✓ Allow unlimited PIN attempts
+
+## DON'Ts
+✗ Auto two-sided scan
+✗ Keep old document versions
+✗ Add watermarks
+✗ Track share history
+✗ Add Absher links
+✗ Lock after failed PIN attempts
+✗ Limit documents (v1 is free)
