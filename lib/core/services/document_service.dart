@@ -529,6 +529,60 @@ class DocumentService {
     }
   }
 
+  /// Reschedule all reminders from cloud
+  /// This is called after login to restore notifications
+  Future<int> rescheduleAllReminders() async {
+    if (_userId == null) return 0;
+
+    try {
+      debugPrint('DocumentService: Rescheduling all reminders from cloud...');
+
+      // Get all future reminders with document info
+      final today = DateTime.now().toIso8601String().split('T').first;
+
+      final response = await _supabase
+          .from('reminders')
+          .select('*, documents(title, document_type)')
+          .eq('user_id', _userId!)
+          .gte('remind_date', today)
+          .order('remind_date', ascending: true);
+
+      final reminders = (response as List)
+          .map((json) => ReminderModel.fromJson(json))
+          .toList();
+
+      int scheduledCount = 0;
+
+      for (final reminder in reminders) {
+        // Get document info from the joined data
+        final docData = (response as List).firstWhere(
+          (r) => r['id'] == reminder.id,
+          orElse: () => null,
+        );
+
+        if (docData != null && docData['documents'] != null) {
+          final docTitle = docData['documents']['title'] as String? ?? 'مستند';
+          final docType = docData['documents']['document_type'] as String? ?? 'personal';
+          final category = DocumentCategory.fromString(docType);
+
+          final success = await NotificationService().scheduleReminder(
+            reminder: reminder,
+            documentTitle: docTitle,
+            category: category,
+          );
+
+          if (success) scheduledCount++;
+        }
+      }
+
+      debugPrint('DocumentService: Rescheduled $scheduledCount reminders');
+      return scheduledCount;
+    } catch (e) {
+      debugPrint('Error rescheduling reminders: $e');
+      return 0;
+    }
+  }
+
   // ============ Statistics ============
 
   /// Get document statistics

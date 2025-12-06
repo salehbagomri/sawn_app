@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/services/document_service.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -72,6 +73,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     if (authResult.isSuccess && authResult.user != null) {
       final user = authResult.user!;
+
+      // Set user ID in document service and reschedule reminders
+      final docService = DocumentService();
+      docService.setUserId(user.id);
+      await docService.rescheduleAllReminders();
+
+      if (!mounted) return;
 
       // Check if PIN is enabled
       if (user.pinEnabled) {
