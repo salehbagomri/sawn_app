@@ -25,17 +25,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
 
       if (result.isSuccess) {
-        // Check if user has Drive folder set up
-        if (result.user?.driveFolderId != null) {
-          // User has everything set up, go to main screen
-          if (result.user?.pinEnabled == true) {
-            context.go(AppRoutes.pinLock);
-          } else {
-            context.go(AppRoutes.home);
-          }
+        // Check if user has PIN enabled for security
+        if (result.user?.pinEnabled == true) {
+          context.go(AppRoutes.pinLock);
         } else {
-          // New user or needs Drive setup, go to PIN setup
-          context.go(AppRoutes.pinSetup);
+          // Go directly to home - PIN setup is optional in settings
+          context.go(AppRoutes.home);
         }
       } else if (result.hasError) {
         _showError(result.errorMessage ?? 'حدث خطأ أثناء تسجيل الدخول');
@@ -66,8 +61,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -107,10 +104,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               // App Name
               Text(
                 AppConstants.appName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: AppColors.getTextPrimary(context),
                   fontFamily: 'Rubik',
                 ),
               ),
@@ -119,9 +116,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               // Tagline
               Text(
                 AppConstants.appTagline,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
-                  color: AppColors.textSecondary,
+                  color: AppColors.getTextSecondary(context),
                   fontFamily: 'Rubik',
                 ),
               ),
@@ -135,8 +132,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: OutlinedButton(
                   onPressed: _isLoading ? null : _signInWithGoogle,
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(color: AppColors.border),
+                    backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+                    side: BorderSide(color: AppColors.getBorder(context)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -158,7 +155,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               width: 24,
                               height: 24,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: isDark ? AppColors.surfaceVariantDark : Colors.white,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: const Icon(
@@ -168,12 +165,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Text(
+                            Text(
                               'المتابعة بحساب Google',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
-                                color: AppColors.textPrimary,
+                                color: AppColors.getTextPrimary(context),
                                 fontFamily: 'Rubik',
                               ),
                             ),
@@ -187,23 +184,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
+                  color: AppColors.getSurfaceVariant(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(
                       Icons.info_outlined,
-                      color: AppColors.textSecondary,
+                      color: AppColors.getTextSecondary(context),
                       size: 20,
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'نستخدم حساب Google لحفظ مستنداتك بأمان في Google Drive الخاص بك',
                         style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: AppColors.getTextSecondary(context),
                           fontFamily: 'Rubik',
                         ),
                       ),
@@ -220,9 +217,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Text.rich(
                   TextSpan(
                     text: 'بالمتابعة، أنت توافق على ',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textTertiary,
+                      color: AppColors.getTextTertiary(context),
                       fontFamily: 'Rubik',
                     ),
                     children: [

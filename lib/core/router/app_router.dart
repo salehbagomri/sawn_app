@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../app.dart';
 
 // Screens
 import '../../features/auth/screens/splash_screen.dart';
@@ -37,6 +38,7 @@ class AppRoutes {
 // Router Provider
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
     routes: [
@@ -84,8 +86,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.documents,
             pageBuilder: (context, state) {
               final focusSearch = state.uri.queryParameters['search'] == 'true';
+              final category = state.uri.queryParameters['category'];
               return NoTransitionPage(
-                child: DocumentsScreen(focusSearch: focusSearch),
+                child: DocumentsScreen(
+                  focusSearch: focusSearch,
+                  initialCategory: category,
+                ),
               );
             },
           ),

@@ -27,10 +27,9 @@ void main() async {
     anonKey: AppConstants.supabaseAnonKey,
   );
 
-  // Initialize notifications and request permissions
+  // Initialize notifications (permission will be requested after onboarding)
   final notificationService = NotificationService();
   await notificationService.initialize();
-  await notificationService.requestPermissions();
 
   // Initialize offline storage and sync
   await OfflineStorageService().initialize();

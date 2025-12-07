@@ -104,12 +104,15 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
     final documentAsync = ref.watch(documentByIdProvider(widget.documentId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       body: documentAsync.when(
         data: (document) {
           if (document == null) {
-            return const Center(
-              child: Text('المستند غير موجود'),
+            return Center(
+              child: Text(
+                'المستند غير موجود',
+                style: TextStyle(color: AppColors.getTextPrimary(context)),
+              ),
             );
           }
           return _buildContent(document);
@@ -127,7 +130,10 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
                 color: AppColors.error,
               ),
               const SizedBox(height: 16),
-              const Text('حدث خطأ في تحميل المستند'),
+              Text(
+                'حدث خطأ في تحميل المستند',
+                style: TextStyle(color: AppColors.getTextPrimary(context)),
+              ),
               const SizedBox(height: 8),
               ElevatedButton(
                 onPressed: () => ref.refresh(documentByIdProvider(widget.documentId)),
@@ -149,7 +155,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
             SliverAppBar(
               expandedHeight: 300,
               pinned: true,
-              backgroundColor: AppColors.surface,
+              backgroundColor: AppColors.getSurface(context),
               leading: IconButton(
                 icon: Container(
                   padding: const EdgeInsets.all(8),
@@ -240,10 +246,10 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
                         Expanded(
                           child: Text(
                             document.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: AppColors.getTextPrimary(context),
                             ),
                           ),
                         ),
@@ -259,14 +265,14 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
                         Icon(
                           document.category.icon,
                           size: 18,
-                          color: AppColors.textSecondary,
+                          color: AppColors.getTextSecondary(context),
                         ),
                         const SizedBox(width: 6),
                         Text(
                           document.category.nameAr,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.textSecondary,
+                            color: AppColors.getTextSecondary(context),
                           ),
                         ),
                       ],
@@ -448,9 +454,9 @@ class _InfoSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.getSurface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.getBorder(context)),
       ),
       child: Column(
         children: [
@@ -517,7 +523,7 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppColors.textTertiary),
+        Icon(icon, size: 20, color: AppColors.getTextTertiary(context)),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -525,9 +531,9 @@ class _InfoRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textTertiary,
+                  color: AppColors.getTextTertiary(context),
                 ),
               ),
               const SizedBox(height: 2),
@@ -536,7 +542,7 @@ class _InfoRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: valueColor ?? AppColors.textPrimary,
+                  color: valueColor ?? AppColors.getTextPrimary(context),
                 ),
               ),
             ],
@@ -609,16 +615,16 @@ class _NotesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.notes, size: 20, color: AppColors.textSecondary),
-            SizedBox(width: 8),
+            Icon(Icons.notes, size: 20, color: AppColors.getTextSecondary(context)),
+            const SizedBox(width: 8),
             Text(
               'ملاحظات',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: AppColors.getTextPrimary(context),
               ),
             ),
           ],
@@ -628,15 +634,15 @@ class _NotesSection extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.getSurface(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: AppColors.getBorder(context)),
           ),
           child: Text(
             notes,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: AppColors.textSecondary,
+              color: AppColors.getTextSecondary(context),
               height: 1.5,
             ),
           ),
@@ -658,16 +664,16 @@ class _RemindersSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.notifications_outlined, size: 20, color: AppColors.textSecondary),
-            SizedBox(width: 8),
+            Icon(Icons.notifications_outlined, size: 20, color: AppColors.getTextSecondary(context)),
+            const SizedBox(width: 8),
             Text(
               'التذكيرات',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: AppColors.getTextPrimary(context),
               ),
             ),
           ],
@@ -679,15 +685,15 @@ class _RemindersSection extends ConsumerWidget {
               return Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: AppColors.getSurface(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: AppColors.getBorder(context)),
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
                     'لا توجد تذكيرات',
                     style: TextStyle(
-                      color: AppColors.textTertiary,
+                      color: AppColors.getTextTertiary(context),
                       fontSize: 14,
                     ),
                   ),
@@ -704,12 +710,12 @@ class _RemindersSection extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: isPast
                         ? AppColors.warning.withValues(alpha: 0.1)
-                        : AppColors.surface,
+                        : AppColors.getSurface(context),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isPast
                           ? AppColors.warning.withValues(alpha: 0.3)
-                          : AppColors.border,
+                          : AppColors.getBorder(context),
                     ),
                   ),
                   child: Row(
@@ -717,7 +723,7 @@ class _RemindersSection extends ConsumerWidget {
                       Icon(
                         reminder.isRead ? Icons.notifications_off : Icons.notifications_active,
                         size: 20,
-                        color: isPast ? AppColors.warning : AppColors.textTertiary,
+                        color: isPast ? AppColors.warning : AppColors.getTextTertiary(context),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -726,17 +732,17 @@ class _RemindersSection extends ConsumerWidget {
                           children: [
                             Text(
                               'قبل ${reminder.daysBefore} يوم',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: AppColors.textPrimary,
+                                color: AppColors.getTextPrimary(context),
                               ),
                             ),
                             Text(
                               DateFormat('d/M/yyyy', 'ar').format(reminder.remindDate),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.textSecondary,
+                                color: AppColors.getTextSecondary(context),
                               ),
                             ),
                           ],

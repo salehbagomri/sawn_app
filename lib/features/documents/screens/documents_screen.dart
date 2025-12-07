@@ -8,10 +8,12 @@ import '../../../core/providers/document_provider.dart';
 
 class DocumentsScreen extends ConsumerStatefulWidget {
   final bool focusSearch;
+  final String? initialCategory;
 
   const DocumentsScreen({
     super.key,
     this.focusSearch = false,
+    this.initialCategory,
   });
 
   @override
@@ -30,6 +32,14 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         setState(() => _isSearching = true);
         _searchFocusNode.requestFocus();
+      });
+    }
+
+    // Set initial category filter if provided (from home screen category click)
+    if (widget.initialCategory != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final category = DocumentCategory.fromString(widget.initialCategory!);
+        ref.read(selectedCategoryProvider.notifier).state = category;
       });
     }
   }
@@ -55,6 +65,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      useRootNavigator: true,
       builder: (context) => const _FilterBottomSheet(),
     );
   }
@@ -69,18 +80,18 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     final hasActiveFilters = selectedCategory != null || selectedStatus != null;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       appBar: AppBar(
         title: _isSearching
             ? TextField(
                 controller: _searchController,
                 focusNode: _searchFocusNode,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'ابحث في المستندات...',
                   border: InputBorder.none,
-                  hintStyle: TextStyle(color: AppColors.textTertiary),
+                  hintStyle: TextStyle(color: AppColors.getTextTertiary(context)),
                 ),
-                style: const TextStyle(color: AppColors.textPrimary),
+                style: TextStyle(color: AppColors.getTextPrimary(context)),
                 onChanged: _onSearchChanged,
               )
             : const Text('مستنداتي'),
@@ -211,7 +222,10 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                       color: AppColors.error,
                     ),
                     const SizedBox(height: 16),
-                    const Text('حدث خطأ في تحميل المستندات'),
+                    Text(
+                      'حدث خطأ في تحميل المستندات',
+                      style: TextStyle(color: AppColors.getTextPrimary(context)),
+                    ),
                     const SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () => ref.invalidate(filteredDocumentsProvider),
@@ -307,9 +321,9 @@ class _FilterBottomSheet extends ConsumerWidget {
     final selectedStatus = ref.watch(selectedStatusProvider);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: AppColors.getSurface(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SafeArea(
         child: Padding(
@@ -324,7 +338,7 @@ class _FilterBottomSheet extends ConsumerWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: AppColors.getBorder(context),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -335,12 +349,12 @@ class _FilterBottomSheet extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'فلترة المستندات',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: AppColors.getTextPrimary(context),
                     ),
                   ),
                   if (selectedCategory != null || selectedStatus != null)
@@ -356,12 +370,12 @@ class _FilterBottomSheet extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // Category Filter
-              const Text(
+              Text(
                 'التصنيف',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: AppColors.getTextPrimary(context),
                 ),
               ),
               const SizedBox(height: 12),
@@ -377,7 +391,7 @@ class _FilterBottomSheet extends ConsumerWidget {
                         Icon(
                           category.icon,
                           size: 18,
-                          color: isSelected ? Colors.white : AppColors.textSecondary,
+                          color: isSelected ? Colors.white : AppColors.getTextSecondary(context),
                         ),
                         const SizedBox(width: 6),
                         Text(category.nameAr),
@@ -389,9 +403,9 @@ class _FilterBottomSheet extends ConsumerWidget {
                           selected ? category : null;
                     },
                     selectedColor: AppColors.primary,
-                    backgroundColor: AppColors.background,
+                    backgroundColor: AppColors.getBackground(context),
                     labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
+                      color: isSelected ? Colors.white : AppColors.getTextSecondary(context),
                     ),
                   );
                 }).toList(),
@@ -399,12 +413,12 @@ class _FilterBottomSheet extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // Status Filter
-              const Text(
+              Text(
                 'الحالة',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: AppColors.getTextPrimary(context),
                 ),
               ),
               const SizedBox(height: 12),
@@ -421,9 +435,9 @@ class _FilterBottomSheet extends ConsumerWidget {
                           selected ? status : null;
                     },
                     selectedColor: _getStatusColor(status),
-                    backgroundColor: AppColors.background,
+                    backgroundColor: AppColors.getBackground(context),
                     labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
+                      color: isSelected ? Colors.white : AppColors.getTextSecondary(context),
                     ),
                   );
                 }).toList(),
@@ -497,9 +511,9 @@ class _DocumentListItem extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.getSurface(context),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: AppColors.getBorder(context)),
           ),
           child: Row(
             children: [
@@ -529,10 +543,10 @@ class _DocumentListItem extends StatelessWidget {
                         Expanded(
                           child: Text(
                             document.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                              color: AppColors.getTextPrimary(context),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -568,30 +582,30 @@ class _DocumentListItem extends StatelessWidget {
                         Icon(
                           document.category.icon,
                           size: 14,
-                          color: AppColors.textTertiary,
+                          color: AppColors.getTextTertiary(context),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           document.category.nameAr,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textTertiary,
+                            color: AppColors.getTextTertiary(context),
                           ),
                         ),
                         if (document.documentNumber != null) ...[
                           const SizedBox(width: 12),
-                          const Icon(
+                          Icon(
                             Icons.numbers,
                             size: 14,
-                            color: AppColors.textTertiary,
+                            color: AppColors.getTextTertiary(context),
                           ),
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
                               document.documentNumber!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.textTertiary,
+                                color: AppColors.getTextTertiary(context),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -611,7 +625,7 @@ class _DocumentListItem extends StatelessWidget {
                                 ? AppColors.error
                                 : document.status == DocumentStatus.expiringSoon
                                     ? AppColors.warning
-                                    : AppColors.textTertiary,
+                                    : AppColors.getTextTertiary(context),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -622,7 +636,7 @@ class _DocumentListItem extends StatelessWidget {
                                   ? AppColors.error
                                   : document.status == DocumentStatus.expiringSoon
                                       ? AppColors.warning
-                                      : AppColors.textTertiary,
+                                      : AppColors.getTextTertiary(context),
                               fontWeight: document.status != DocumentStatus.valid
                                   ? FontWeight.w600
                                   : FontWeight.normal,
@@ -642,7 +656,7 @@ class _DocumentListItem extends StatelessWidget {
                                     ? AppColors.error
                                     : document.status == DocumentStatus.expiringSoon
                                         ? AppColors.warning
-                                        : AppColors.textTertiary,
+                                        : AppColors.getTextTertiary(context),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -659,7 +673,7 @@ class _DocumentListItem extends StatelessWidget {
                 onPressed: onFavoriteToggle,
                 icon: Icon(
                   document.isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: document.isFavorite ? AppColors.error : AppColors.textTertiary,
+                  color: document.isFavorite ? AppColors.error : AppColors.getTextTertiary(context),
                 ),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -730,14 +744,14 @@ class _EmptyState extends StatelessWidget {
           Icon(
             icon,
             size: 80,
-            color: AppColors.textTertiary,
+            color: AppColors.getTextTertiary(context),
           ),
           const SizedBox(height: 16),
           Text(
             message,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: AppColors.textSecondary,
+              color: AppColors.getTextSecondary(context),
             ),
             textAlign: TextAlign.center,
           ),

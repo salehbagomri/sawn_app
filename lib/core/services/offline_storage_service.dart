@@ -23,6 +23,10 @@ class OfflineStorageService {
 
   bool _isInitialized = false;
 
+  // Track recently synced document IDs to preserve their local values temporarily
+  // This prevents server returning stale data right after sync
+  final Map<String, DateTime> _recentlySyncedIds = {};
+
   /// Initialize the offline storage
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -74,16 +78,66 @@ class OfflineStorageService {
   }
 
   /// Cache multiple documents
-  Future<void> cacheDocuments(List<DocumentModel> documents) async {
+  /// This merges server documents with local cache, preserving local-only documents
+  Future<void> cacheDocuments(List<DocumentModel> documents, {bool preserveLocalChanges = true}) async {
     if (!_isInitialized) await initialize();
 
     try {
       final entries = <String, Map>{};
+      final pendingIds = preserveLocalChanges ? getPendingDocumentIds() : <String>{};
+      final serverDocIds = documents.map((d) => d.id).toSet();
+
+      // First, add all server documents (except those with pending changes or recently synced)
       for (final doc in documents) {
+        // Skip if has pending changes
+        if (pendingIds.contains(doc.id)) {
+          final localDoc = getCachedDocument(doc.id);
+          if (localDoc != null) {
+            debugPrint('OfflineStorageService: Preserving pending changes for ${doc.id}');
+            entries[doc.id] = localDoc.toJson();
+            continue;
+          }
+        }
+
+        // Skip if recently synced (server might return stale data)
+        if (preserveLocalChanges && isRecentlySynced(doc.id)) {
+          final localDoc = getCachedDocument(doc.id);
+          if (localDoc != null) {
+            debugPrint('OfflineStorageService: Preserving recently synced ${doc.id}');
+            entries[doc.id] = localDoc.toJson();
+            continue;
+          }
+        }
+
+        // Check if local version is newer
+        if (preserveLocalChanges) {
+          final localDoc = getCachedDocument(doc.id);
+          if (localDoc != null && localDoc.updatedAt.isAfter(doc.updatedAt)) {
+            debugPrint('OfflineStorageService: Local version is newer for ${doc.id}, preserving');
+            entries[doc.id] = localDoc.toJson();
+            continue;
+          }
+        }
+
         entries[doc.id] = doc.toJson();
       }
-      await _documents?.putAll(entries);
-      debugPrint('OfflineStorageService: Cached ${documents.length} documents');
+
+      // Then, preserve local-only documents (created offline, not yet on server)
+      final allCached = getAllCachedDocuments();
+      int preservedCount = 0;
+      for (final localDoc in allCached) {
+        if (!serverDocIds.contains(localDoc.id)) {
+          // This document exists locally but not on server - preserve it
+          entries[localDoc.id] = localDoc.toJson();
+          preservedCount++;
+          debugPrint('OfflineStorageService: Preserving local-only document ${localDoc.id}');
+        }
+      }
+
+      if (entries.isNotEmpty) {
+        await _documents?.putAll(entries);
+      }
+      debugPrint('OfflineStorageService: Cached ${entries.length} documents ($preservedCount local-only preserved)');
     } catch (e) {
       debugPrint('OfflineStorageService: Error caching documents: $e');
     }
@@ -196,6 +250,36 @@ class OfflineStorageService {
   /// Get pending sync count
   int get pendingSyncCount => _pendingSync?.length ?? 0;
 
+  /// Get list of document IDs with pending changes
+  Set<String> getPendingDocumentIds() {
+    if (_pendingSync == null) return {};
+    try {
+      return _pendingSync!.keys.cast<String>().toSet();
+    } catch (e) {
+      return {};
+    }
+  }
+
+  /// Mark a document as recently synced (to protect from stale server data)
+  void markAsRecentlySynced(String documentId) {
+    _recentlySyncedIds[documentId] = DateTime.now();
+    debugPrint('OfflineStorageService: Marked $documentId as recently synced');
+  }
+
+  /// Check if a document was recently synced (within last 10 seconds)
+  bool isRecentlySynced(String documentId) {
+    final syncTime = _recentlySyncedIds[documentId];
+    if (syncTime == null) return false;
+
+    final elapsed = DateTime.now().difference(syncTime);
+    if (elapsed.inSeconds > 10) {
+      // Clean up old entry
+      _recentlySyncedIds.remove(documentId);
+      return false;
+    }
+    return true;
+  }
+
   /// Check if has pending sync
   bool get hasPendingSync => pendingSyncCount > 0;
 
@@ -232,6 +316,16 @@ class OfflineStorageService {
   /// Set offline mode enabled
   Future<void> setOfflineModeEnabled(bool enabled) async {
     await _settings?.put('offlineModeEnabled', enabled);
+  }
+
+  /// Check if auto backup to Google Drive is enabled
+  bool get autoBackupEnabled {
+    return _settings?.get('autoBackupEnabled', defaultValue: true) ?? true;
+  }
+
+  /// Set auto backup enabled
+  Future<void> setAutoBackupEnabled(bool enabled) async {
+    await _settings?.put('autoBackupEnabled', enabled);
   }
 
   // ============ File Cache ============
@@ -274,6 +368,24 @@ class OfflineStorageService {
       return null; // Will be implemented with proper async handling
     } catch (e) {
       debugPrint('OfflineStorageService: Error getting cached file: $e');
+      return null;
+    }
+  }
+
+  /// Get cached file path by document ID (async)
+  Future<String?> getCachedFilePath(String documentId) async {
+    try {
+      final cacheDir = await _cacheDir;
+      final files = await cacheDir.list().toList();
+
+      for (final file in files) {
+        if (file is File && file.path.contains(documentId)) {
+          return file.path;
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('OfflineStorageService: Error getting cached file path: $e');
       return null;
     }
   }

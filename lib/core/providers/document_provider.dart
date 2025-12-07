@@ -4,7 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/document_model.dart';
 import '../models/reminder_model.dart';
 import '../services/document_service.dart';
+import '../services/sync_service.dart';
+import '../services/offline_storage_service.dart';
 import './auth_provider.dart';
+
+/// Provider for OfflineStorageService
+final offlineStorageProvider = Provider<OfflineStorageService>((ref) {
+  return OfflineStorageService();
+});
 
 /// Provider for DocumentService
 /// This provider watches auth state and sets userId accordingly
@@ -19,6 +26,29 @@ final documentServiceProvider = Provider<DocumentService>((ref) {
   });
 
   return service;
+});
+
+/// Provider for SyncService - initialized separately to avoid circular dependency
+final syncServiceProvider = Provider<SyncService>((ref) {
+  final syncService = SyncService();
+  syncService.initialize();
+  return syncService;
+});
+
+/// Provider to setup sync service callbacks - call this once in app initialization
+final syncServiceSetupProvider = Provider<void>((ref) {
+  final syncService = ref.watch(syncServiceProvider);
+
+  // Set callback to refresh providers when data changes
+  syncService.onDataRefreshNeeded = () {
+    debugPrint('SyncService: Triggering providers refresh');
+    ref.invalidate(documentsProvider);
+    ref.invalidate(expiringDocumentsProvider);
+    ref.invalidate(favoriteDocumentsProvider);
+    ref.invalidate(recentDocumentsProvider);
+    ref.invalidate(categoryCounts);
+    ref.invalidate(documentStatsProvider);
+  };
 });
 
 /// Provider for all documents

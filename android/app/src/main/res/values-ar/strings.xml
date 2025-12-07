@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Biometric authentication strings -->
+    <string name="fingerprint_hint">المس مستشعر البصمة</string>
+    <string name="fingerprint_not_recognized">لم يتم التعرف على البصمة. حاول مرة أخرى.</string>
+    <string name="fingerprint_success">تم التحقق من البصمة بنجاح</string>
+    <string name="biometric_hint">تحقق من الهوية</string>
+    <string name="biometric_not_recognized">لم يتم التعرف. حاول مرة أخرى.</string>
+    <string name="biometric_success">تم التحقق بنجاح</string>
+    <string name="device_credential_hint">أدخل رمز القفل</string>
+    <string name="sign_in_title">المصادقة مطلوبة</string>
+    <string name="sign_in_subtitle">تحقق من هويتك</string>
+    <string name="cancel">إلغاء</string>
+    <string name="use_pin">استخدم رمز PIN</string>
+    <string name="use_password">استخدم كلمة المرور</string>
+</resources>

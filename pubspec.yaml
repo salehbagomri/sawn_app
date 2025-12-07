@@ -52,6 +52,8 @@ dependencies:
 
   # Security
   local_auth: ^2.1.8
+  local_auth_android: ^1.0.56
+  local_auth_darwin: ^1.6.1
 
   # Notifications (local only - no Firebase)
   flutter_local_notifications: ^18.0.0

@@ -110,10 +110,13 @@ class DocumentService {
     bool? isFavorite,
     String? searchQuery,
   }) {
+    debugPrint('DocumentService: Getting filtered cached documents for user: $_userId');
     var documents = _offlineStorage.getAllCachedDocuments();
+    debugPrint('DocumentService: Total cached documents: ${documents.length}');
 
     // Filter by user ID
     documents = documents.where((d) => d.userId == _userId).toList();
+    debugPrint('DocumentService: After user filter: ${documents.length} documents');
 
     if (category != null) {
       documents = documents.where((d) => d.category == category).toList();
@@ -146,21 +149,48 @@ class DocumentService {
   Future<List<DocumentModel>> getExpiringDocuments({int days = 60}) async {
     if (_userId == null) return [];
 
+    final isOnline = await _offlineStorage.isOnline();
     final now = DateTime.now();
     final futureDate = now.add(Duration(days: days));
 
-    final response = await _supabase
-        .from('documents')
-        .select()
-        .eq('user_id', _userId!)
-        .not('expiry_date', 'is', null)
-        .gte('expiry_date', now.toIso8601String().split('T').first)
-        .lte('expiry_date', futureDate.toIso8601String().split('T').first)
-        .order('expiry_date', ascending: true);
+    if (!isOnline) {
+      debugPrint('DocumentService: Offline mode - filtering expiring documents from cache');
+      final allDocs = _offlineStorage.getAllCachedDocuments()
+          .where((d) => d.userId == _userId)
+          .toList();
+      return allDocs.where((d) {
+        if (d.expiryDate == null) return false;
+        return d.expiryDate!.isAfter(now.subtract(const Duration(days: 1))) &&
+               d.expiryDate!.isBefore(futureDate.add(const Duration(days: 1)));
+      }).toList()
+        ..sort((a, b) => a.expiryDate!.compareTo(b.expiryDate!));
+    }
 
-    return (response as List)
-        .map((json) => DocumentModel.fromJson(json))
-        .toList();
+    try {
+      final response = await _supabase
+          .from('documents')
+          .select()
+          .eq('user_id', _userId!)
+          .not('expiry_date', 'is', null)
+          .gte('expiry_date', now.toIso8601String().split('T').first)
+          .lte('expiry_date', futureDate.toIso8601String().split('T').first)
+          .order('expiry_date', ascending: true);
+
+      return (response as List)
+          .map((json) => DocumentModel.fromJson(json))
+          .toList();
+    } catch (e) {
+      debugPrint('DocumentService: Error fetching expiring documents, using cache: $e');
+      final allDocs = _offlineStorage.getAllCachedDocuments()
+          .where((d) => d.userId == _userId)
+          .toList();
+      return allDocs.where((d) {
+        if (d.expiryDate == null) return false;
+        return d.expiryDate!.isAfter(now.subtract(const Duration(days: 1))) &&
+               d.expiryDate!.isBefore(futureDate.add(const Duration(days: 1)));
+      }).toList()
+        ..sort((a, b) => a.expiryDate!.compareTo(b.expiryDate!));
+    }
   }
 
   /// Get favorite documents
@@ -172,31 +202,70 @@ class DocumentService {
   Future<List<DocumentModel>> getRecentDocuments({int limit = 5}) async {
     if (_userId == null) return [];
 
-    final response = await _supabase
-        .from('documents')
-        .select()
-        .eq('user_id', _userId!)
-        .order('updated_at', ascending: false)
-        .limit(limit);
+    final isOnline = await _offlineStorage.isOnline();
 
-    return (response as List)
-        .map((json) => DocumentModel.fromJson(json))
-        .toList();
+    if (!isOnline) {
+      debugPrint('DocumentService: Offline mode - getting recent documents from cache');
+      final allDocs = _offlineStorage.getAllCachedDocuments()
+          .where((d) => d.userId == _userId)
+          .toList();
+      allDocs.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return allDocs.take(limit).toList();
+    }
+
+    try {
+      final response = await _supabase
+          .from('documents')
+          .select()
+          .eq('user_id', _userId!)
+          .order('updated_at', ascending: false)
+          .limit(limit);
+
+      return (response as List)
+          .map((json) => DocumentModel.fromJson(json))
+          .toList();
+    } catch (e) {
+      debugPrint('DocumentService: Error fetching recent documents, using cache: $e');
+      final allDocs = _offlineStorage.getAllCachedDocuments()
+          .where((d) => d.userId == _userId)
+          .toList();
+      allDocs.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return allDocs.take(limit).toList();
+    }
   }
 
   /// Get single document by ID
   Future<DocumentModel?> getDocument(String id) async {
     if (_userId == null) return null;
 
-    final response = await _supabase
-        .from('documents')
-        .select()
-        .eq('id', id)
-        .eq('user_id', _userId!)
-        .maybeSingle();
+    final isOnline = await _offlineStorage.isOnline();
 
-    if (response == null) return null;
-    return DocumentModel.fromJson(response);
+    // Try to get from cache first (especially useful for offline)
+    final cachedDoc = _offlineStorage.getCachedDocument(id);
+
+    if (!isOnline) {
+      debugPrint('DocumentService: Offline mode - returning cached document');
+      return cachedDoc;
+    }
+
+    try {
+      final response = await _supabase
+          .from('documents')
+          .select()
+          .eq('id', id)
+          .eq('user_id', _userId!)
+          .maybeSingle();
+
+      if (response == null) return cachedDoc;
+
+      final document = DocumentModel.fromJson(response);
+      // Cache the document for offline access
+      await _offlineStorage.cacheDocument(document);
+      return document;
+    } catch (e) {
+      debugPrint('DocumentService: Error fetching document, using cache: $e');
+      return cachedDoc;
+    }
   }
 
   /// Create new document
@@ -219,39 +288,50 @@ class DocumentService {
       return null;
     }
 
+    // Check if online
+    final isOnline = await _offlineStorage.isOnline();
+    debugPrint('DocumentService: Online status: $isOnline');
+
     try {
       final id = _uuid.v4();
       debugPrint('Generated document ID: $id');
       String? driveFileId;
       String? driveFileUrl;
+      String? localFilePath;
 
-      // Try to upload to Google Drive if file provided
-      // But don't fail the whole operation if Drive upload fails
+      // Try to upload to Google Drive if file provided, online, and auto backup is enabled
       if (file != null) {
-        try {
-          // Get main folder first
-          final mainFolder = await _driveService.getOrCreateMainFolder();
-          if (mainFolder != null) {
-            // Get or create category folder
-            final categoryFolder = await _driveService.getOrCreateCategoryFolder(
-              category.nameAr,
-              mainFolder,
-            );
-            if (categoryFolder != null) {
-              final uploadResult = await _driveService.uploadFile(
-                file: file,
-                folderId: categoryFolder,
-                customName: '$title-$id',
+        final autoBackupEnabled = _offlineStorage.autoBackupEnabled;
+        if (isOnline && autoBackupEnabled) {
+          try {
+            // Get main folder first
+            final mainFolder = await _driveService.getOrCreateMainFolder();
+            if (mainFolder != null) {
+              // Get or create category folder
+              final categoryFolder = await _driveService.getOrCreateCategoryFolder(
+                category.nameAr,
+                mainFolder,
               );
-              driveFileId = uploadResult?.id;
-              driveFileUrl = uploadResult?.webViewLink;
+              if (categoryFolder != null) {
+                final uploadResult = await _driveService.uploadFile(
+                  file: file,
+                  folderId: categoryFolder,
+                  customName: '$title-$id',
+                );
+                driveFileId = uploadResult?.id;
+                driveFileUrl = uploadResult?.webViewLink;
+              }
             }
+          } catch (driveError, driveStack) {
+            // Log Drive error but continue saving to database
+            debugPrint('Warning: Could not upload to Google Drive: $driveError');
+            debugPrint('Drive stack: $driveStack');
           }
-        } catch (driveError, driveStack) {
-          // Log Drive error but continue saving to database
-          debugPrint('Warning: Could not upload to Google Drive: $driveError');
-          debugPrint('Drive stack: $driveStack');
         }
+
+        // Cache file locally for offline access
+        localFilePath = await _offlineStorage.cacheFile(id, file);
+        debugPrint('DocumentService: File cached locally at: $localFilePath');
       }
 
       final document = DocumentModel(
@@ -266,26 +346,70 @@ class DocumentService {
         notes: notes,
         driveFileId: driveFileId,
         driveFileUrl: driveFileUrl,
+        isOffline: !isOnline, // Mark as offline if created without connection
       );
 
-      debugPrint('Document model created, inserting to Supabase...');
-      debugPrint('Document JSON: ${document.toJson()}');
+      if (isOnline) {
+        // Online: Save to Supabase
+        debugPrint('Document model created, inserting to Supabase...');
+        debugPrint('Document JSON: ${document.toJson()}');
 
-      await _supabase.from('documents').insert(document.toJson());
-      debugPrint('Document inserted to Supabase successfully!');
+        await _supabase.from('documents').insert(document.toJson());
+        debugPrint('Document inserted to Supabase successfully!');
 
-      // Create reminders if expiry date and reminder days provided
-      if (expiryDate != null && reminderDays != null && reminderDays.isNotEmpty) {
-        for (final days in reminderDays) {
-          await createReminder(
-            documentId: id,
-            expiryDate: expiryDate,
-            daysBefore: days,
-            documentTitle: title,
-            category: category,
-          );
+        // Create reminders if expiry date and reminder days provided
+        if (expiryDate != null && reminderDays != null && reminderDays.isNotEmpty) {
+          for (final days in reminderDays) {
+            await createReminder(
+              documentId: id,
+              expiryDate: expiryDate,
+              daysBefore: days,
+              documentTitle: title,
+              category: category,
+            );
+          }
+        }
+      } else {
+        // Offline: Save locally and add to pending sync
+        debugPrint('DocumentService: Offline mode - saving document locally');
+        await _offlineStorage.cacheDocument(document);
+
+        // Add to pending sync queue
+        await _offlineStorage.addPendingSync(
+          operationType: 'create',
+          documentId: id,
+          data: {
+            ...document.toJson(),
+            'reminder_days': reminderDays,
+          },
+        );
+        debugPrint('DocumentService: Document added to pending sync queue');
+
+        // Schedule local notifications for reminders
+        if (expiryDate != null && reminderDays != null && reminderDays.isNotEmpty) {
+          for (final days in reminderDays) {
+            final remindDate = expiryDate.subtract(Duration(days: days));
+            if (remindDate.isAfter(DateTime.now())) {
+              final reminder = ReminderModel(
+                id: _uuid.v4(),
+                documentId: id,
+                userId: _userId!,
+                remindDate: remindDate,
+                daysBefore: days,
+              );
+              await NotificationService().scheduleReminder(
+                reminder: reminder,
+                documentTitle: title,
+                category: category,
+              );
+              debugPrint('DocumentService: Scheduled local notification for $days days before expiry');
+            }
+          }
         }
       }
+
+      // Cache document locally for future offline access
+      await _offlineStorage.cacheDocument(document);
 
       return document;
     } catch (e, stackTrace) {
@@ -323,6 +447,29 @@ class DocumentService {
       final doc = await getDocument(documentId);
       if (doc == null) return false;
 
+      final updatedDoc = doc.copyWith(
+        isFavorite: !doc.isFavorite,
+        updatedAt: DateTime.now(),
+      );
+
+      final isOnline = await _offlineStorage.isOnline();
+
+      if (!isOnline) {
+        // Offline mode: update cache and queue for sync
+        debugPrint('DocumentService: Offline mode - updating favorite locally');
+        await _offlineStorage.cacheDocument(updatedDoc);
+        await _offlineStorage.addPendingSync(
+          operationType: 'update',
+          documentId: documentId,
+          data: {
+            'is_favorite': updatedDoc.isFavorite,
+            'updated_at': updatedDoc.updatedAt.toIso8601String(),
+          },
+        );
+        return true;
+      }
+
+      // Online mode: update Supabase
       await _supabase
           .from('documents')
           .update({
@@ -332,9 +479,30 @@ class DocumentService {
           .eq('id', documentId)
           .eq('user_id', _userId!);
 
+      // Update local cache
+      await _offlineStorage.cacheDocument(updatedDoc);
+
       return true;
     } catch (e) {
       debugPrint('Error toggling favorite: $e');
+      // Try to update locally on error
+      final doc = _offlineStorage.getCachedDocument(documentId);
+      if (doc != null) {
+        final updatedDoc = doc.copyWith(
+          isFavorite: !doc.isFavorite,
+          updatedAt: DateTime.now(),
+        );
+        await _offlineStorage.cacheDocument(updatedDoc);
+        await _offlineStorage.addPendingSync(
+          operationType: 'update',
+          documentId: documentId,
+          data: {
+            'is_favorite': updatedDoc.isFavorite,
+            'updated_at': updatedDoc.updatedAt.toIso8601String(),
+          },
+        );
+        return true;
+      }
       return false;
     }
   }
@@ -380,6 +548,15 @@ class DocumentService {
     if (_userId == null) return {};
 
     try {
+      // Check if online
+      final isOnline = await _offlineStorage.isOnline();
+
+      if (!isOnline) {
+        // Return counts from cached documents when offline
+        debugPrint('DocumentService: Offline mode - getting category counts from cache');
+        return _getCategoryCountsFromCache();
+      }
+
       final response = await _supabase
           .from('documents')
           .select('document_type')
@@ -394,8 +571,25 @@ class DocumentService {
       return counts;
     } catch (e) {
       debugPrint('Error getting category counts: $e');
-      return {};
+      // On error, try to return counts from cache
+      return _getCategoryCountsFromCache();
     }
+  }
+
+  /// Get category counts from cached documents
+  Map<String, int> _getCategoryCountsFromCache() {
+    final documents = _offlineStorage.getAllCachedDocuments()
+        .where((d) => d.userId == _userId)
+        .toList();
+
+    final Map<String, int> counts = {};
+    for (final doc in documents) {
+      final category = doc.category.nameEn;
+      counts[category] = (counts[category] ?? 0) + 1;
+    }
+
+    debugPrint('DocumentService: Category counts from cache: $counts');
+    return counts;
   }
 
   // ============ Reminders ============
@@ -445,6 +639,15 @@ class DocumentService {
     if (_userId == null) return [];
 
     try {
+      // Check if online
+      final isOnline = await _offlineStorage.isOnline();
+
+      if (!isOnline) {
+        // Return empty list when offline (reminders need online data)
+        debugPrint('DocumentService: Offline mode - skipping reminders fetch');
+        return [];
+      }
+
       // Note: We select document_type instead of category since that's where we store it
       var query = _supabase
           .from('reminders')
@@ -471,6 +674,15 @@ class DocumentService {
     if (_userId == null) return [];
 
     try {
+      // Check if online
+      final isOnline = await _offlineStorage.isOnline();
+
+      if (!isOnline) {
+        // Return empty list when offline (reminders need online data)
+        debugPrint('DocumentService: Offline mode - skipping due reminders fetch');
+        return [];
+      }
+
       final today = DateTime.now().toIso8601String().split('T').first;
 
       final response = await _supabase
@@ -532,13 +744,17 @@ class DocumentService {
   /// Reschedule all reminders from cloud
   /// This is called after login to restore notifications
   Future<int> rescheduleAllReminders() async {
-    if (_userId == null) return 0;
+    if (_userId == null) {
+      debugPrint('DocumentService: rescheduleAllReminders - No user ID set');
+      return 0;
+    }
 
     try {
-      debugPrint('DocumentService: Rescheduling all reminders from cloud...');
+      debugPrint('DocumentService: Rescheduling all reminders from cloud for user: $_userId');
 
       // Get all future reminders with document info
       final today = DateTime.now().toIso8601String().split('T').first;
+      debugPrint('DocumentService: Fetching reminders from date: $today');
 
       final response = await _supabase
           .from('reminders')
@@ -547,23 +763,30 @@ class DocumentService {
           .gte('remind_date', today)
           .order('remind_date', ascending: true);
 
+      debugPrint('DocumentService: Raw response: $response');
+
       final reminders = (response as List)
           .map((json) => ReminderModel.fromJson(json))
           .toList();
 
+      debugPrint('DocumentService: Found ${reminders.length} reminders to reschedule');
+
       int scheduledCount = 0;
+      final responseList = response as List;
 
-      for (final reminder in reminders) {
-        // Get document info from the joined data
-        final docData = (response as List).firstWhere(
-          (r) => r['id'] == reminder.id,
-          orElse: () => null,
-        );
+      for (int i = 0; i < reminders.length; i++) {
+        final reminder = reminders[i];
+        final docData = responseList[i];
 
-        if (docData != null && docData['documents'] != null) {
+        debugPrint('DocumentService: Processing reminder ${reminder.id}');
+        debugPrint('DocumentService: Doc data: $docData');
+
+        if (docData['documents'] != null) {
           final docTitle = docData['documents']['title'] as String? ?? 'مستند';
           final docType = docData['documents']['document_type'] as String? ?? 'personal';
           final category = DocumentCategory.fromString(docType);
+
+          debugPrint('DocumentService: Scheduling reminder for "$docTitle" (${reminder.remindDate})');
 
           final success = await NotificationService().scheduleReminder(
             reminder: reminder,
@@ -571,7 +794,14 @@ class DocumentService {
             category: category,
           );
 
-          if (success) scheduledCount++;
+          if (success) {
+            scheduledCount++;
+            debugPrint('DocumentService: Successfully scheduled reminder');
+          } else {
+            debugPrint('DocumentService: Failed to schedule reminder');
+          }
+        } else {
+          debugPrint('DocumentService: No document data found for reminder');
         }
       }
 

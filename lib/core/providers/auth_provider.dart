@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
+import '../services/google_sign_in_service.dart';
 import '../models/user_model.dart';
 
 /// Provider for AuthService
@@ -106,5 +107,15 @@ final isPinEnabledProvider = Provider<bool>((ref) {
   return userAsync.maybeWhen(
     data: (user) => user?.pinEnabled ?? false,
     orElse: () => false,
+  );
+});
+
+/// Provider for Google user info (name, email, photo)
+final googleUserInfoProvider = Provider<({String? displayName, String? email, String? photoUrl})>((ref) {
+  final googleUser = GoogleSignInService().currentUser;
+  return (
+    displayName: googleUser?.displayName,
+    email: googleUser?.email,
+    photoUrl: googleUser?.photoUrl,
   );
 });

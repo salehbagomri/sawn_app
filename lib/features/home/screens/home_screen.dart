@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/document_provider.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../widgets/expiring_documents_section.dart';
 import '../widgets/categories_section.dart';
 import '../widgets/recent_documents_section.dart';
@@ -15,13 +16,24 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = Supabase.instance.client.auth.currentUser;
-    final userName = _getFirstName(user?.userMetadata?['full_name'] ?? user?.userMetadata?['name'] ?? 'مستخدم');
-    final avatarUrl = user?.userMetadata?['avatar_url'] as String?;
+    final googleUserInfo = ref.watch(googleUserInfoProvider);
+
+    // Try Google account name first, then Supabase metadata, then fallback
+    final userName = _getFirstName(
+      googleUserInfo.displayName ??
+      user?.userMetadata?['full_name'] as String? ??
+      user?.userMetadata?['name'] as String? ??
+      'مستخدم'
+    );
+
+    // Try Google photo first, then Supabase metadata
+    final avatarUrl = googleUserInfo.photoUrl ?? user?.userMetadata?['avatar_url'] as String?;
+
     final unreadCount = ref.watch(unreadRemindersCountProvider);
     final stats = ref.watch(documentStatsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -47,10 +59,10 @@ class HomeScreen extends ConsumerWidget {
                           children: [
                             Text(
                               'مرحباً، $userName',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
+                                color: AppColors.getTextPrimary(context),
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -66,26 +78,26 @@ class HomeScreen extends ConsumerWidget {
                                     ),
                                   );
                                 }
-                                return const Text(
+                                return Text(
                                   'مستنداتك في أمان',
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: AppColors.textSecondary,
+                                    color: AppColors.getTextSecondary(context),
                                   ),
                                 );
                               },
-                              loading: () => const Text(
+                              loading: () => Text(
                                 'جاري التحميل...',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.getTextSecondary(context),
                                 ),
                               ),
-                              error: (_, __) => const Text(
+                              error: (_, __) => Text(
                                 'مستنداتك في أمان',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.getTextSecondary(context),
                                 ),
                               ),
                             ),
@@ -103,22 +115,22 @@ class HomeScreen extends ConsumerWidget {
                               data: (count) => count > 0
                                   ? Badge(
                                       label: Text('$count'),
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.notifications_outlined,
-                                        color: AppColors.textPrimary,
+                                        color: AppColors.getTextPrimary(context),
                                       ),
                                     )
-                                  : const Icon(
+                                  : Icon(
                                       Icons.notifications_outlined,
-                                      color: AppColors.textPrimary,
+                                      color: AppColors.getTextPrimary(context),
                                     ),
-                              loading: () => const Icon(
+                              loading: () => Icon(
                                 Icons.notifications_outlined,
-                                color: AppColors.textPrimary,
+                                color: AppColors.getTextPrimary(context),
                               ),
-                              error: (_, __) => const Icon(
+                              error: (_, __) => Icon(
                                 Icons.notifications_outlined,
-                                color: AppColors.textPrimary,
+                                color: AppColors.getTextPrimary(context),
                               ),
                             ),
                           ),
@@ -165,23 +177,23 @@ class HomeScreen extends ConsumerWidget {
                         vertical: 14,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: AppColors.getSurface(context),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.surfaceVariant,
+                          color: AppColors.getSurfaceVariant(context),
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
                           Icon(
                             Icons.search,
-                            color: AppColors.textTertiary,
+                            color: AppColors.getTextTertiary(context),
                           ),
-                          SizedBox(width: 12),
+                          const SizedBox(width: 12),
                           Text(
                             'ابحث في مستنداتك...',
                             style: TextStyle(
-                              color: AppColors.textTertiary,
+                              color: AppColors.getTextTertiary(context),
                               fontSize: 16,
                             ),
                           ),

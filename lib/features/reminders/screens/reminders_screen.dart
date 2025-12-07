@@ -79,7 +79,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       appBar: AppBar(
         title: const Text('التنبيهات'),
         bottom: TabBar(
@@ -89,7 +89,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
             Tab(text: 'جميع التذكيرات'),
           ],
           labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
+          unselectedLabelColor: AppColors.getTextSecondary(context),
           indicatorColor: AppColors.primary,
         ),
       ),
@@ -165,7 +165,10 @@ class _DueRemindersTab extends ConsumerWidget {
           children: [
             const Icon(Icons.error_outline, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
-            const Text('حدث خطأ في تحميل التذكيرات'),
+            Text(
+              'حدث خطأ في تحميل التذكيرات',
+              style: TextStyle(color: AppColors.getTextPrimary(context)),
+            ),
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: () => ref.invalidate(dueRemindersProvider),
@@ -226,10 +229,10 @@ class _AllRemindersTab extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
                       month,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textSecondary,
+                        color: AppColors.getTextSecondary(context),
                       ),
                     ),
                   ),
@@ -256,7 +259,10 @@ class _AllRemindersTab extends ConsumerWidget {
           children: [
             const Icon(Icons.error_outline, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
-            const Text('حدث خطأ في تحميل التذكيرات'),
+            Text(
+              'حدث خطأ في تحميل التذكيرات',
+              style: TextStyle(color: AppColors.getTextPrimary(context)),
+            ),
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: () => ref.invalidate(remindersProvider),
@@ -292,8 +298,8 @@ class _ReminderCard extends StatelessWidget {
     IconData statusIcon;
 
     if (reminder.isRead) {
-      cardColor = AppColors.surface;
-      accentColor = AppColors.textTertiary;
+      cardColor = AppColors.getSurface(context);
+      accentColor = AppColors.getTextTertiary(context);
       statusIcon = Icons.check_circle;
     } else if (isPast) {
       cardColor = AppColors.error.withValues(alpha: 0.05);
@@ -304,7 +310,7 @@ class _ReminderCard extends StatelessWidget {
       accentColor = AppColors.warning;
       statusIcon = Icons.notifications_active;
     } else {
-      cardColor = AppColors.surface;
+      cardColor = AppColors.getSurface(context);
       accentColor = AppColors.info;
       statusIcon = Icons.notifications;
     }
@@ -321,7 +327,7 @@ class _ReminderCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: reminder.isRead
-                  ? AppColors.border
+                  ? AppColors.getBorder(context)
                   : accentColor.withValues(alpha: 0.3),
             ),
           ),
@@ -367,7 +373,7 @@ class _ReminderCard extends StatelessWidget {
                               fontSize: 16,
                               fontWeight:
                                   reminder.isRead ? FontWeight.normal : FontWeight.w600,
-                              color: AppColors.textPrimary,
+                              color: AppColors.getTextPrimary(context),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -381,28 +387,28 @@ class _ReminderCard extends StatelessWidget {
                         Icon(
                           _getCategoryIcon(reminder.documentCategory),
                           size: 14,
-                          color: AppColors.textTertiary,
+                          color: AppColors.getTextTertiary(context),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           reminder.documentCategory ?? '',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textTertiary,
+                            color: AppColors.getTextTertiary(context),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Icon(
+                        Icon(
                           Icons.timer_outlined,
                           size: 14,
-                          color: AppColors.textTertiary,
+                          color: AppColors.getTextTertiary(context),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           'قبل ${reminder.daysBefore} يوم',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textTertiary,
+                            color: AppColors.getTextTertiary(context),
                           ),
                         ),
                       ],
@@ -422,7 +428,7 @@ class _ReminderCard extends StatelessWidget {
 
               // Actions
               PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: AppColors.textTertiary),
+                icon: Icon(Icons.more_vert, color: AppColors.getTextTertiary(context)),
                 onSelected: (value) {
                   switch (value) {
                     case 'read':
@@ -528,24 +534,24 @@ class _EmptyState extends StatelessWidget {
             Icon(
               icon,
               size: 80,
-              color: AppColors.textTertiary,
+              color: AppColors.getTextTertiary(context),
             ),
             const SizedBox(height: 16),
             Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+                color: AppColors.getTextSecondary(context),
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               subtitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textTertiary,
+                color: AppColors.getTextTertiary(context),
               ),
               textAlign: TextAlign.center,
             ),

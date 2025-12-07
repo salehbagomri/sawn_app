@@ -20,20 +20,20 @@ class ExpiringDocumentsSection extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.warning_amber_rounded,
                     color: AppColors.warning,
                     size: 20,
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
                     'تنتهي قريباً',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: AppColors.getTextPrimary(context),
                     ),
                   ),
                 ],
@@ -55,23 +55,23 @@ class ExpiringDocumentsSection extends ConsumerWidget {
                 return Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: AppColors.getSurface(context),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.surfaceVariant),
+                    border: Border.all(color: AppColors.getSurfaceVariant(context)),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Column(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.check_circle_outline,
                           color: AppColors.success,
                           size: 40,
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(
                           'لا توجد مستندات تنتهي قريباً',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: AppColors.getTextSecondary(context),
                             fontSize: 14,
                           ),
                         ),
@@ -164,10 +164,10 @@ class _ExpiringDocumentCard extends StatelessWidget {
               children: [
                 Text(
                   document.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: AppColors.getTextPrimary(context),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

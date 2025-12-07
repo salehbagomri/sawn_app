@@ -45,4 +45,9 @@ class AppConstants {
     {'nameAr': 'العمل', 'nameEn': 'Work', 'icon': 'work_outlined'},
     {'nameAr': 'السكن', 'nameEn': 'Home', 'icon': 'home_outlined'},
   ];
+
+  // App Links
+  static const String privacyPolicyUrl = 'https://sawn.app/privacy';
+  static const String playStoreUrl = 'https://play.google.com/store/apps/details?id=com.sawn.app';
+  static const String appStoreUrl = 'https://apps.apple.com/app/sawn/id000000000';
 }

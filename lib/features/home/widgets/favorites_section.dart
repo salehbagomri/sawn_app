@@ -23,20 +23,20 @@ class FavoritesSection extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.star_rounded,
                     color: AppColors.warning,
                     size: 20,
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
                     'المفضلة',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: AppColors.getTextPrimary(context),
                     ),
                   ),
                 ],
@@ -125,10 +125,10 @@ class _FavoriteCard extends StatelessWidget {
             ),
             Text(
               document.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: AppColors.getTextPrimary(context),
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

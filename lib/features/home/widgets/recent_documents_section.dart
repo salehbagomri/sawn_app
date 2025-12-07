@@ -21,12 +21,12 @@ class RecentDocumentsSection extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'آخر المستندات',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: AppColors.getTextPrimary(context),
                 ),
               ),
               TextButton(
@@ -46,23 +46,23 @@ class RecentDocumentsSection extends ConsumerWidget {
                 return Container(
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: AppColors.getSurface(context),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.surfaceVariant),
+                    border: Border.all(color: AppColors.getSurfaceVariant(context)),
                   ),
                   child: Center(
                     child: Column(
                       children: [
                         Icon(
                           Icons.folder_open_outlined,
-                          color: AppColors.textTertiary,
+                          color: AppColors.getTextTertiary(context),
                           size: 48,
                         ),
                         const SizedBox(height: 12),
-                        const Text(
+                        Text(
                           'لا توجد مستندات بعد',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: AppColors.getTextSecondary(context),
                             fontSize: 16,
                           ),
                         ),
@@ -102,9 +102,9 @@ class RecentDocumentsSection extends ConsumerWidget {
                   child: Container(
                     height: 80,
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: AppColors.getSurface(context),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.surfaceVariant),
+                      border: Border.all(color: AppColors.getSurfaceVariant(context)),
                     ),
                     child: const Center(
                       child: SizedBox(
@@ -155,10 +155,10 @@ class _RecentDocumentItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.getSurface(context),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.surfaceVariant,
+            color: AppColors.getSurfaceVariant(context),
           ),
         ),
         child: Row(
@@ -186,10 +186,10 @@ class _RecentDocumentItem extends StatelessWidget {
                       Expanded(
                         child: Text(
                           document.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                            color: AppColors.getTextPrimary(context),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -209,9 +209,9 @@ class _RecentDocumentItem extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     document.category.nameAr,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textTertiary,
+                      color: AppColors.getTextTertiary(context),
                     ),
                   ),
                 ],
@@ -219,15 +219,15 @@ class _RecentDocumentItem extends StatelessWidget {
             ),
             Text(
               dateText,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textTertiary,
+                color: AppColors.getTextTertiary(context),
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(
+            Icon(
               Icons.chevron_left,
-              color: AppColors.textTertiary,
+              color: AppColors.getTextTertiary(context),
               size: 20,
             ),
           ],

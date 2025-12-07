@@ -99,4 +99,55 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
+  // ============================================
+  // Helper methods for theme-aware colors
+  // ============================================
+  static Color getBackground(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? backgroundDark
+        : background;
+  }
+
+  static Color getSurface(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? surfaceDark
+        : surface;
+  }
+
+  static Color getSurfaceVariant(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? surfaceVariantDark
+        : surfaceVariant;
+  }
+
+  static Color getTextPrimary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? textPrimaryDark
+        : textPrimary;
+  }
+
+  static Color getTextSecondary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? textSecondaryDark
+        : textSecondary;
+  }
+
+  static Color getTextTertiary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? textTertiaryDark
+        : textTertiary;
+  }
+
+  static Color getBorder(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? borderDark
+        : border;
+  }
+
+  static Color getDivider(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? dividerDark
+        : divider;
+  }
 }

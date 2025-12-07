@@ -192,19 +192,19 @@ class AppTheme {
     // Navigation Bar (Material 3)
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: AppColors.background,
-      indicatorColor: AppColors.primary.withOpacity(0.1),
+      indicatorColor: AppColors.primary.withValues(alpha: 0.1),
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       height: 64,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      iconTheme: MaterialStateProperty.resolveWith((states) {
-        if (states.contains(MaterialState.selected)) {
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
           return const IconThemeData(color: AppColors.primary, size: 24);
         }
         return const IconThemeData(color: AppColors.iconSecondary, size: 24);
       }),
-      labelTextStyle: MaterialStateProperty.resolveWith((states) {
-        if (states.contains(MaterialState.selected)) {
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
           return const TextStyle(
             fontFamily: 'Rubik',
             fontSize: 12,
@@ -254,7 +254,7 @@ class AppTheme {
     chipTheme: ChipThemeData(
       backgroundColor: AppColors.surfaceVariant,
       disabledColor: AppColors.surfaceVariant,
-      selectedColor: AppColors.primary.withOpacity(0.1),
+      selectedColor: AppColors.primary.withValues(alpha: 0.1),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       labelStyle: const TextStyle(
         fontFamily: 'Rubik',
@@ -462,6 +462,7 @@ class AppTheme {
         fontSize: 18,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimaryDark,
+        letterSpacing: 0,
       ),
       iconTheme: IconThemeData(
         color: AppColors.textSecondaryDark,
@@ -480,6 +481,7 @@ class AppTheme {
           width: 1,
         ),
       ),
+      margin: EdgeInsets.zero,
     ),
 
     inputDecorationTheme: InputDecorationTheme(
@@ -497,7 +499,25 @@ class AppTheme {
         borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: AppColors.primaryLight, width: 2),
       ),
-      hintStyle: const TextStyle(color: AppColors.textTertiaryDark),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: AppColors.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: AppColors.error, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      hintStyle: const TextStyle(
+        color: AppColors.textTertiaryDark,
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+      ),
+      labelStyle: const TextStyle(
+        color: AppColors.textSecondaryDark,
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+      ),
     ),
 
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -505,9 +525,55 @@ class AppTheme {
         elevation: 0,
         backgroundColor: AppColors.primaryLight,
         foregroundColor: AppColors.backgroundDark,
+        disabledBackgroundColor: AppColors.surfaceVariantDark,
+        disabledForegroundColor: AppColors.textTertiaryDark,
         minimumSize: const Size(double.infinity, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
+        ),
+        textStyle: const TextStyle(
+          fontFamily: 'Rubik',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.25,
+        ),
+      ),
+    ),
+
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        elevation: 0,
+        foregroundColor: AppColors.primaryLight,
+        disabledForegroundColor: AppColors.textTertiaryDark,
+        minimumSize: const Size(double.infinity, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        side: const BorderSide(color: AppColors.borderDark),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        textStyle: const TextStyle(
+          fontFamily: 'Rubik',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.25,
+        ),
+      ),
+    ),
+
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.primaryLight,
+        disabledForegroundColor: AppColors.textTertiaryDark,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        textStyle: const TextStyle(
+          fontFamily: 'Rubik',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.25,
         ),
       ),
     ),
@@ -518,49 +584,239 @@ class AppTheme {
       unselectedItemColor: AppColors.textSecondaryDark,
       type: BottomNavigationBarType.fixed,
       elevation: 0,
+      selectedLabelStyle: TextStyle(
+        fontFamily: 'Rubik',
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+      ),
+      unselectedLabelStyle: TextStyle(
+        fontFamily: 'Rubik',
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+      ),
+    ),
+
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: AppColors.surfaceDark,
+      indicatorColor: AppColors.primaryLight.withValues(alpha: 0.15),
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      height: 64,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return const IconThemeData(color: AppColors.primaryLight, size: 24);
+        }
+        return const IconThemeData(color: AppColors.textSecondaryDark, size: 24);
+      }),
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return const TextStyle(
+            fontFamily: 'Rubik',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppColors.primaryLight,
+          );
+        }
+        return const TextStyle(
+          fontFamily: 'Rubik',
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          color: AppColors.textSecondaryDark,
+        );
+      }),
+    ),
+
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: AppColors.primaryLight,
+      foregroundColor: AppColors.backgroundDark,
+      elevation: 2,
+      focusElevation: 4,
+      hoverElevation: 4,
+      highlightElevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
     ),
 
     dividerTheme: const DividerThemeData(
       color: AppColors.dividerDark,
       thickness: 1,
+      space: 1,
+    ),
+
+    listTileTheme: const ListTileThemeData(
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      minLeadingWidth: 24,
+      horizontalTitleGap: 16,
+      iconColor: AppColors.textSecondaryDark,
+      textColor: AppColors.textPrimaryDark,
+    ),
+
+    chipTheme: ChipThemeData(
+      backgroundColor: AppColors.surfaceVariantDark,
+      disabledColor: AppColors.surfaceVariantDark,
+      selectedColor: AppColors.primaryLight.withValues(alpha: 0.15),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      labelStyle: const TextStyle(
+        fontFamily: 'Rubik',
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textPrimaryDark,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: const BorderSide(color: AppColors.borderDark),
+      ),
+    ),
+
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.surfaceDark,
+      surfaceTintColor: Colors.transparent,
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      titleTextStyle: const TextStyle(
+        fontFamily: 'Rubik',
+        fontSize: 18,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimaryDark,
+      ),
+      contentTextStyle: const TextStyle(
+        fontFamily: 'Rubik',
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textSecondaryDark,
+      ),
+    ),
+
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: AppColors.surfaceDark,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+    ),
+
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: AppColors.textPrimaryDark,
+      contentTextStyle: const TextStyle(
+        fontFamily: 'Rubik',
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: AppColors.backgroundDark,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      behavior: SnackBarBehavior.floating,
     ),
 
     textTheme: const TextTheme(
+      // Headlines
       headlineLarge: TextStyle(
         fontFamily: 'Rubik',
         fontSize: 28,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimaryDark,
+        letterSpacing: -0.5,
+        height: 1.3,
       ),
       headlineMedium: TextStyle(
         fontFamily: 'Rubik',
         fontSize: 24,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimaryDark,
+        letterSpacing: -0.25,
+        height: 1.3,
       ),
+      headlineSmall: TextStyle(
+        fontFamily: 'Rubik',
+        fontSize: 20,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimaryDark,
+        letterSpacing: 0,
+        height: 1.3,
+      ),
+
+      // Titles
       titleLarge: TextStyle(
         fontFamily: 'Rubik',
         fontSize: 18,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimaryDark,
+        letterSpacing: 0,
+        height: 1.4,
       ),
+      titleMedium: TextStyle(
+        fontFamily: 'Rubik',
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimaryDark,
+        letterSpacing: 0.1,
+        height: 1.4,
+      ),
+      titleSmall: TextStyle(
+        fontFamily: 'Rubik',
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimaryDark,
+        letterSpacing: 0.1,
+        height: 1.4,
+      ),
+
+      // Body
       bodyLarge: TextStyle(
         fontFamily: 'Rubik',
         fontSize: 16,
         fontWeight: FontWeight.w400,
         color: AppColors.textPrimaryDark,
+        letterSpacing: 0.25,
+        height: 1.5,
       ),
       bodyMedium: TextStyle(
         fontFamily: 'Rubik',
         fontSize: 14,
         fontWeight: FontWeight.w400,
         color: AppColors.textSecondaryDark,
+        letterSpacing: 0.25,
+        height: 1.5,
       ),
       bodySmall: TextStyle(
         fontFamily: 'Rubik',
         fontSize: 12,
         fontWeight: FontWeight.w400,
         color: AppColors.textTertiaryDark,
+        letterSpacing: 0.25,
+        height: 1.5,
+      ),
+
+      // Labels
+      labelLarge: TextStyle(
+        fontFamily: 'Rubik',
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimaryDark,
+        letterSpacing: 0.25,
+        height: 1.4,
+      ),
+      labelMedium: TextStyle(
+        fontFamily: 'Rubik',
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textSecondaryDark,
+        letterSpacing: 0.25,
+        height: 1.4,
+      ),
+      labelSmall: TextStyle(
+        fontFamily: 'Rubik',
+        fontSize: 10,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textTertiaryDark,
+        letterSpacing: 0.25,
+        height: 1.4,
       ),
     ),
   );

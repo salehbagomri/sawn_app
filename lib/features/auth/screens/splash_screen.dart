@@ -73,16 +73,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     if (authResult.isSuccess && authResult.user != null) {
       final user = authResult.user!;
+      debugPrint('SplashScreen: User authenticated - ${user.name} (${user.id})');
 
       // Set user ID in document service and reschedule reminders
       final docService = DocumentService();
       docService.setUserId(user.id);
-      await docService.rescheduleAllReminders();
+
+      debugPrint('SplashScreen: Starting to reschedule reminders...');
+      final rescheduledCount = await docService.rescheduleAllReminders();
+      debugPrint('SplashScreen: Rescheduled $rescheduledCount reminders from cloud');
 
       if (!mounted) return;
 
-      // Check if PIN is enabled
-      if (user.pinEnabled) {
+      // Check if app lock (biometric) is enabled
+      final appLockEnabled = prefs.getBool('app_lock_enabled') ?? false;
+      debugPrint('SplashScreen: App lock enabled: $appLockEnabled');
+
+      if (appLockEnabled) {
         context.go(AppRoutes.pinLock);
       } else {
         context.go(AppRoutes.home);
@@ -102,7 +109,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       body: Center(
         child: AnimatedBuilder(
           animation: _controller,
@@ -146,10 +153,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     // App Name
                     Text(
                       AppConstants.appName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 42,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: AppColors.getTextPrimary(context),
                         fontFamily: 'Rubik',
                       ),
                     ),
@@ -158,9 +165,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     // Tagline
                     Text(
                       AppConstants.appTagline,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
-                        color: AppColors.textSecondary,
+                        color: AppColors.getTextSecondary(context),
                         fontFamily: 'Rubik',
                       ),
                     ),

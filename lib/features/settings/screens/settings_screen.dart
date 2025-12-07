@@ -1,13 +1,20 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:local_auth_android/local_auth_android.dart';
+import 'package:local_auth_darwin/local_auth_darwin.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/providers/document_provider.dart';
+import '../../../core/providers/settings_provider.dart';
+import '../../../core/providers/drive_provider.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/google_drive_service.dart';
-import '../../../core/services/notification_service.dart';
-import '../../../core/services/sync_service.dart';
 import '../../../core/services/offline_storage_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -18,10 +25,46 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  bool _biometricEnabled = true;
-  bool _darkModeEnabled = false;
   bool _autoBackupEnabled = true;
   bool _isSigningOut = false;
+  final OfflineStorageService _offlineStorage = OfflineStorageService();
+  final LocalAuthentication _localAuth = LocalAuthentication();
+  bool _canCheckBiometrics = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAutoBackupSetting();
+    _checkBiometricSupport();
+  }
+
+  Future<void> _checkBiometricSupport() async {
+    try {
+      final canCheck = await _localAuth.canCheckBiometrics;
+      final isDeviceSupported = await _localAuth.isDeviceSupported();
+      if (mounted) {
+        setState(() {
+          _canCheckBiometrics = canCheck && isDeviceSupported;
+        });
+      }
+    } catch (e) {
+      // Biometrics not available
+    }
+  }
+
+  Future<void> _loadAutoBackupSetting() async {
+    await _offlineStorage.initialize();
+    if (mounted) {
+      setState(() {
+        _autoBackupEnabled = _offlineStorage.autoBackupEnabled;
+      });
+    }
+  }
+
+  Future<void> _setAutoBackupEnabled(bool value) async {
+    setState(() => _autoBackupEnabled = value);
+    await _offlineStorage.setAutoBackupEnabled(value);
+  }
 
   Future<void> _signOut() async {
     final confirmed = await showDialog<bool>(
@@ -72,161 +115,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  void _showNotificationSettings() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'إعدادات الإشعارات',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ListTile(
-              leading: const Icon(Icons.notifications_active, color: AppColors.primary),
-              title: const Text('اختبار الإشعارات'),
-              subtitle: const Text('إرسال إشعار تجريبي'),
-              onTap: () async {
-                Navigator.pop(context);
-                // Request permissions first
-                final hasPermission = await NotificationService().requestPermissions();
-                if (!hasPermission) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(this.context).showSnackBar(
-                    const SnackBar(
-                      content: Text('يرجى السماح بالإشعارات من إعدادات الجهاز'),
-                      backgroundColor: AppColors.warning,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                  return;
-                }
-                await NotificationService().showTestNotification();
-                if (!mounted) return;
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  const SnackBar(
-                    content: Text('تم إرسال إشعار تجريبي - تحقق من شريط الإشعارات'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.schedule, color: AppColors.secondary),
-              title: const Text('الإشعارات المجدولة'),
-              subtitle: FutureBuilder<int>(
-                future: NotificationService().getPendingNotificationsCount(),
-                builder: (context, snapshot) {
-                  final count = snapshot.data ?? 0;
-                  return Text('$count إشعار مجدول');
-                },
-              ),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getSyncStatusText() {
-    final syncService = SyncService();
-    final lastSync = syncService.lastSyncTime;
-    final pendingCount = syncService.pendingSyncCount;
-
-    if (pendingCount > 0) {
-      return '$pendingCount عنصر بانتظار المزامنة';
-    } else if (lastSync != null) {
-      final diff = DateTime.now().difference(lastSync);
-      if (diff.inMinutes < 1) {
-        return 'تمت المزامنة الآن';
-      } else if (diff.inMinutes < 60) {
-        return 'آخر مزامنة منذ ${diff.inMinutes} دقيقة';
-      } else if (diff.inHours < 24) {
-        return 'آخر مزامنة منذ ${diff.inHours} ساعة';
-      } else {
-        return 'آخر مزامنة منذ ${diff.inDays} يوم';
-      }
-    }
-    return 'لم تتم المزامنة بعد';
-  }
-
-  void _showSyncSettings() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'المزامنة',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ListTile(
-              leading: const Icon(Icons.sync, color: AppColors.primary),
-              title: const Text('مزامنة الآن'),
-              subtitle: Text(_getSyncStatusText()),
-              onTap: () async {
-                Navigator.pop(context);
-                final result = await SyncService().syncPendingChanges();
-                if (!mounted) return;
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  SnackBar(
-                    content: Text(result.success ? 'تمت المزامنة بنجاح' : 'فشلت المزامنة'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-                setState(() {}); // Refresh UI
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.refresh, color: AppColors.secondary),
-              title: const Text('تحديث ذاكرة التخزين المؤقت'),
-              subtitle: const Text('جلب أحدث البيانات من الخادم'),
-              onTap: () async {
-                Navigator.pop(context);
-                await SyncService().refreshDocumentsCache();
-                if (!mounted) return;
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  const SnackBar(
-                    content: Text('تم تحديث ذاكرة التخزين المؤقت'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showStorageInfo() {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -300,6 +192,115 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  void _showDriveInfo() {
+    final driveStatus = ref.read(driveStatusProvider);
+
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4285F4).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.add_to_drive,
+                    color: Color(0xFF4285F4),
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Google Drive',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            driveStatus.isConnected
+                                ? Icons.check_circle
+                                : Icons.error,
+                            size: 16,
+                            color: driveStatus.isConnected
+                                ? AppColors.success
+                                : AppColors.error,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            driveStatus.isConnected ? 'متصل' : 'غير متصل',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: driveStatus.isConnected
+                                  ? AppColors.success
+                                  : AppColors.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            if (driveStatus.isConnected) ...[
+              ListTile(
+                leading: const Icon(Icons.email_outlined, color: AppColors.primary),
+                title: const Text('البريد الإلكتروني'),
+                subtitle: Text(driveStatus.userEmail ?? '-'),
+                contentPadding: EdgeInsets.zero,
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.folder_outlined, color: AppColors.primary),
+                title: const Text('مجلد النسخ الاحتياطي'),
+                subtitle: const Text('Sawn Documents'),
+                contentPadding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'يتم حفظ جميع مستنداتك بشكل آمن في Google Drive',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.getTextTertiary(context),
+                ),
+              ),
+            ] else ...[
+              Text(
+                'لم يتم الاتصال بـ Google Drive. يرجى تسجيل الدخول مرة أخرى.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.getTextSecondary(context),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showAboutDialog() {
     showDialog(
       context: context,
@@ -311,31 +312,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Text('صَوْن'),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'تطبيق صَوْن لحفظ وإدارة مستنداتك',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            SizedBox(height: 16),
-            Text(
+            const SizedBox(height: 16),
+            const Text(
               '• حفظ آمن للمستندات في Google Drive\n'
               '• تذكيرات تلقائية قبل انتهاء المستندات\n'
               '• تنظيم المستندات حسب التصنيف\n'
               '• دعم كامل للغة العربية',
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary,
                 height: 1.6,
               ),
             ),
-            SizedBox(height: 16),
-            Text(
+            const SizedBox(height: 16),
+            const Text(
               'الإصدار 1.0.0',
               style: TextStyle(
                 fontSize: 12,
@@ -354,16 +354,61 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Future<void> _openPrivacyPolicy() async {
+    final url = Uri.parse(AppConstants.privacyPolicyUrl);
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('لا يمكن فتح الرابط'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openAppRating() async {
+    final url = Uri.parse(
+      Platform.isIOS ? AppConstants.appStoreUrl : AppConstants.playStoreUrl,
+    );
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('لا يمكن فتح المتجر'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
-    final userName = user?.userMetadata?['full_name'] ?? user?.userMetadata?['name'] ?? 'مستخدم';
-    final userEmail = user?.email ?? '';
-    final avatarUrl = user?.userMetadata?['avatar_url'] as String?;
+    final googleUserInfo = ref.watch(googleUserInfoProvider);
+
+    // Try Google account name first, then Supabase metadata, then fallback
+    final userName = googleUserInfo.displayName ??
+        user?.userMetadata?['full_name'] as String? ??
+        user?.userMetadata?['name'] as String? ??
+        'مستخدم';
+
+    // Try Google email first, then Supabase email
+    final userEmail = googleUserInfo.email ?? user?.email ?? '';
+
+    // Try Google photo first, then Supabase metadata
+    final avatarUrl = googleUserInfo.photoUrl ?? user?.userMetadata?['avatar_url'] as String?;
+
     final stats = ref.watch(documentStatsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       appBar: AppBar(
         title: const Text('الإعدادات'),
       ),
@@ -473,36 +518,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Account Section
-              _SettingsSection(
-                title: 'الحساب',
-                children: [
-                  _SettingsItem(
-                    icon: Icons.lock_outlined,
-                    title: 'تغيير الرمز السري',
-                    onTap: () {
-                      // TODO: Navigate to PIN change
-                    },
-                  ),
-                  _SettingsItem(
-                    icon: Icons.fingerprint,
-                    title: 'البصمة / Face ID',
-                    trailing: Switch(
-                      value: _biometricEnabled,
-                      onChanged: (value) {
-                        setState(() => _biometricEnabled = value);
-                      },
-                      activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
-                      activeColor: AppColors.primary,
-                    ),
-                    onTap: () {
-                      setState(() => _biometricEnabled = !_biometricEnabled);
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
               // App Settings
               _SettingsSection(
                 title: 'التطبيق',
@@ -511,22 +526,120 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     icon: Icons.dark_mode_outlined,
                     title: 'الوضع الليلي',
                     trailing: Switch(
-                      value: _darkModeEnabled,
+                      value: ref.watch(themeModeProvider) == ThemeMode.dark,
                       onChanged: (value) {
-                        setState(() => _darkModeEnabled = value);
-                        // TODO: Implement dark mode
+                        ref.read(themeModeProvider.notifier).setThemeMode(
+                          value ? ThemeMode.dark : ThemeMode.light,
+                        );
                       },
                       activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
                       activeColor: AppColors.primary,
                     ),
                     onTap: () {
-                      setState(() => _darkModeEnabled = !_darkModeEnabled);
+                      ref.read(themeModeProvider.notifier).toggleDarkMode();
                     },
                   ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Security & Notifications
+              _SettingsSection(
+                title: 'الأمان والإشعارات',
+                children: [
+                  if (_canCheckBiometrics)
+                    _SettingsItem(
+                      icon: Icons.fingerprint,
+                      title: 'قفل التطبيق بالبصمة',
+                      subtitle: 'طلب البصمة عند فتح التطبيق',
+                      trailing: Switch(
+                        value: ref.watch(appLockEnabledProvider),
+                        onChanged: (value) async {
+                          if (value) {
+                            // Verify biometric before enabling
+                            try {
+                              final authenticated = await _localAuth.authenticate(
+                                localizedReason: 'تأكيد هويتك لتفعيل قفل التطبيق',
+                                authMessages: const <AuthMessages>[
+                                  AndroidAuthMessages(
+                                    signInTitle: 'المصادقة مطلوبة',
+                                    biometricHint: 'تحقق من هويتك',
+                                    biometricNotRecognized: 'لم يتم التعرف. حاول مرة أخرى.',
+                                    biometricSuccess: 'تم التحقق بنجاح',
+                                    cancelButton: 'إلغاء',
+                                    deviceCredentialsRequiredTitle: 'مطلوب رمز القفل',
+                                    deviceCredentialsSetupDescription: 'يرجى إعداد رمز قفل الجهاز',
+                                    goToSettingsButton: 'الإعدادات',
+                                    goToSettingsDescription: 'لم يتم إعداد المصادقة البيومترية.',
+                                  ),
+                                  IOSAuthMessages(
+                                    cancelButton: 'إلغاء',
+                                    goToSettingsButton: 'الإعدادات',
+                                    goToSettingsDescription: 'يرجى إعداد المصادقة البيومترية.',
+                                    lockOut: 'يرجى إعادة تفعيل المصادقة البيومترية',
+                                  ),
+                                ],
+                                options: const AuthenticationOptions(
+                                  stickyAuth: true,
+                                  biometricOnly: false, // Allow PIN/Pattern as fallback
+                                ),
+                              );
+                              if (authenticated) {
+                                ref.read(appLockEnabledProvider.notifier).setAppLockEnabled(true);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('تم تفعيل قفل التطبيق'),
+                                      backgroundColor: AppColors.success,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              debugPrint('Biometric auth error: $e');
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('فشل التحقق: ${e.toString()}'),
+                                    backgroundColor: AppColors.error,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            }
+                          } else {
+                            ref.read(appLockEnabledProvider.notifier).setAppLockEnabled(false);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('تم إلغاء قفل التطبيق'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
+                        activeColor: AppColors.primary,
+                      ),
+                      onTap: () {},
+                    ),
                   _SettingsItem(
                     icon: Icons.notifications_outlined,
-                    title: 'إعدادات الإشعارات',
-                    onTap: () => _showNotificationSettings(),
+                    title: 'الإشعارات',
+                    subtitle: 'تذكيرات انتهاء المستندات',
+                    trailing: Switch(
+                      value: ref.watch(notificationsEnabledProvider),
+                      onChanged: (value) {
+                        ref.read(notificationsEnabledProvider.notifier).setNotificationsEnabled(value);
+                      },
+                      activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
+                      activeColor: AppColors.primary,
+                    ),
+                    onTap: () {
+                      ref.read(notificationsEnabledProvider.notifier).toggle();
+                    },
                   ),
                 ],
               ),
@@ -536,13 +649,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               _SettingsSection(
                 title: 'النسخ الاحتياطي والتخزين',
                 children: [
-                  _SettingsItem(
-                    icon: Icons.add_to_drive,
-                    iconColor: const Color(0xFF4285F4),
-                    title: 'Google Drive',
-                    subtitle: 'متصل',
-                    onTap: () {
-                      // TODO: Show Drive info
+                  Builder(
+                    builder: (context) {
+                      final driveStatus = ref.watch(driveStatusProvider);
+                      return _SettingsItem(
+                        icon: Icons.add_to_drive,
+                        iconColor: const Color(0xFF4285F4),
+                        title: 'Google Drive',
+                        subtitle: driveStatus.isConnected ? 'متصل' : 'غير متصل',
+                        onTap: _showDriveInfo,
+                      );
                     },
                   ),
                   _SettingsItem(
@@ -550,21 +666,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     title: 'النسخ الاحتياطي التلقائي',
                     trailing: Switch(
                       value: _autoBackupEnabled,
-                      onChanged: (value) {
-                        setState(() => _autoBackupEnabled = value);
-                      },
+                      onChanged: (value) => _setAutoBackupEnabled(value),
                       activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
                       activeThumbColor: AppColors.primary,
                     ),
-                    onTap: () {
-                      setState(() => _autoBackupEnabled = !_autoBackupEnabled);
-                    },
-                  ),
-                  _SettingsItem(
-                    icon: Icons.sync,
-                    title: 'المزامنة',
-                    subtitle: _getSyncStatusText(),
-                    onTap: _showSyncSettings,
+                    onTap: () => _setAutoBackupEnabled(!_autoBackupEnabled),
                   ),
                   _SettingsItem(
                     icon: Icons.storage_outlined,
@@ -588,16 +694,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingsItem(
                     icon: Icons.privacy_tip_outlined,
                     title: 'سياسة الخصوصية',
-                    onTap: () {
-                      // TODO: Open privacy policy
-                    },
+                    onTap: _openPrivacyPolicy,
                   ),
                   _SettingsItem(
                     icon: Icons.star_outline,
                     title: 'قيم التطبيق',
-                    onTap: () {
-                      // TODO: Open store rating
-                    },
+                    onTap: _openAppRating,
                   ),
                 ],
               ),
@@ -634,11 +736,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(height: 24),
 
               // Version
-              const Center(
+              Center(
                 child: Text(
                   'الإصدار 1.0.0',
                   style: TextStyle(
-                    color: AppColors.textTertiary,
+                    color: AppColors.getTextTertiary(context),
                     fontSize: 12,
                   ),
                 ),
@@ -702,19 +804,19 @@ class _SettingsSection extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppColors.textTertiary,
+            color: AppColors.getTextTertiary(context),
           ),
         ),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.getSurface(context),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.surfaceVariant,
+              color: AppColors.getSurfaceVariant(context),
             ),
           ),
           child: Column(
@@ -756,7 +858,7 @@ class _SettingsItem extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: iconColor ?? AppColors.textSecondary,
+              color: iconColor ?? AppColors.getTextSecondary(context),
               size: 24,
             ),
             const SizedBox(width: 16),
@@ -766,18 +868,18 @@ class _SettingsItem extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
-                      color: AppColors.textPrimary,
+                      color: AppColors.getTextPrimary(context),
                     ),
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
                     Text(
                       subtitle!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textTertiary,
+                        color: AppColors.getTextTertiary(context),
                       ),
                     ),
                   ],
@@ -785,9 +887,9 @@ class _SettingsItem extends StatelessWidget {
               ),
             ),
             trailing ??
-                const Icon(
+                Icon(
                   Icons.chevron_left,
-                  color: AppColors.textTertiary,
+                  color: AppColors.getTextTertiary(context),
                   size: 20,
                 ),
           ],

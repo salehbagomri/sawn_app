@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/services/notification_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -54,6 +55,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_first_time', false);
+
+    // Request notification permission after onboarding
+    await NotificationService().initialize();
+    await NotificationService().requestPermissions();
+
     if (mounted) {
       context.go(AppRoutes.login);
     }
@@ -68,7 +74,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -118,7 +124,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         decoration: BoxDecoration(
                           color: _currentPage == index
                               ? AppColors.primary
-                              : AppColors.textTertiary.withOpacity(0.3),
+                              : AppColors.getTextTertiary(context).withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -163,7 +169,7 @@ class _OnboardingPage extends StatelessWidget {
             width: 150,
             height: 150,
             decoration: BoxDecoration(
-              color: data.color.withOpacity(0.1),
+              color: data.color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -177,10 +183,10 @@ class _OnboardingPage extends StatelessWidget {
           // Title
           Text(
             data.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: AppColors.getTextPrimary(context),
             ),
             textAlign: TextAlign.center,
           ),
@@ -189,9 +195,9 @@ class _OnboardingPage extends StatelessWidget {
           // Description
           Text(
             data.description,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: AppColors.textSecondary,
+              color: AppColors.getTextSecondary(context),
               height: 1.6,
             ),
             textAlign: TextAlign.center,

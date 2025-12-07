@@ -141,10 +141,11 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      useRootNavigator: true,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: AppColors.getSurface(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -176,11 +177,11 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
 
             // Extracted fields
             if (result.hasExtractedFields) ...[
-              const Text(
+              Text(
                 'البيانات المستخرجة:',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+                  color: AppColors.getTextSecondary(context),
                 ),
               ),
               const SizedBox(height: 12),
@@ -203,14 +204,14 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.background,
+                    color: AppColors.getBackground(context),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     result.fullText.isEmpty ? 'لا يوجد نص' : result.fullText,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textSecondary,
+                      color: AppColors.getTextSecondary(context),
                     ),
                   ),
                 ),
@@ -250,9 +251,9 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textTertiary,
+                    color: AppColors.getTextTertiary(context),
                   ),
                 ),
                 Text(
@@ -461,7 +462,7 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       appBar: AppBar(
         title: const Text('بيانات المستند'),
         leading: IconButton(
@@ -485,21 +486,21 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
             // Back side preview (if available)
             if (widget.additionalFile != null) ...[
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'الجهة الخلفية:',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+                  color: AppColors.getTextSecondary(context),
                 ),
               ),
               const SizedBox(height: 8),
               Container(
                 height: 150,
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: AppColors.getSurface(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: AppColors.getBorder(context)),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
@@ -514,7 +515,7 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
             const SizedBox(height: 24),
 
             // Title Field
-            _buildLabel('عنوان المستند', isRequired: true),
+            _buildLabel('عنوان المستند', context, isRequired: true),
             const SizedBox(height: 8),
             TextFormField(
               controller: _titleController,
@@ -533,7 +534,7 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
             const SizedBox(height: 20),
 
             // Category Selection
-            _buildLabel('التصنيف', isRequired: true),
+            _buildLabel('التصنيف', context, isRequired: true),
             const SizedBox(height: 8),
             _CategorySelector(
               selected: _selectedCategory,
@@ -542,7 +543,7 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
             const SizedBox(height: 20),
 
             // Document Number
-            _buildLabel('رقم المستند'),
+            _buildLabel('رقم المستند', context),
             const SizedBox(height: 8),
             TextFormField(
               controller: _documentNumberController,
@@ -561,7 +562,7 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildLabel('تاريخ الإصدار'),
+                      _buildLabel('تاريخ الإصدار', context),
                       const SizedBox(height: 8),
                       _DateField(
                         date: _issueDate,
@@ -576,7 +577,7 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildLabel('تاريخ الانتهاء'),
+                      _buildLabel('تاريخ الانتهاء', context),
                       const SizedBox(height: 8),
                       _DateField(
                         date: _expiryDate,
@@ -592,13 +593,13 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
 
             // Reminders Section (only show if expiry date is set)
             if (_expiryDate != null) ...[
-              _buildLabel('التذكيرات'),
+              _buildLabel('التذكيرات', context),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'سنذكرك قبل انتهاء المستند',
                 style: TextStyle(
                   fontSize: 13,
-                  color: AppColors.textSecondary,
+                  color: AppColors.getTextSecondary(context),
                 ),
               ),
               const SizedBox(height: 12),
@@ -616,7 +617,7 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
                     labelStyle: TextStyle(
                       color: option.isSelected
                           ? AppColors.primary
-                          : AppColors.textSecondary,
+                          : AppColors.getTextSecondary(context),
                     ),
                   );
                 }).toList(),
@@ -625,7 +626,7 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
             ],
 
             // Notes Field
-            _buildLabel('ملاحظات'),
+            _buildLabel('ملاحظات', context),
             const SizedBox(height: 8),
             TextFormField(
               controller: _notesController,
@@ -669,15 +670,15 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
     );
   }
 
-  Widget _buildLabel(String text, {bool isRequired = false}) {
+  Widget _buildLabel(String text, BuildContext context, {bool isRequired = false}) {
     return Row(
       children: [
         Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: AppColors.getTextPrimary(context),
           ),
         ),
         if (isRequired)
@@ -698,16 +699,16 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
   }) {
     return InputDecoration(
       hintText: hint,
-      prefixIcon: Icon(prefixIcon, color: AppColors.textTertiary),
+      prefixIcon: Icon(prefixIcon, color: AppColors.getTextTertiary(context)),
       filled: true,
-      fillColor: AppColors.surface,
+      fillColor: AppColors.getSurface(context),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide(color: AppColors.getBorder(context)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide(color: AppColors.getBorder(context)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -743,9 +744,9 @@ class _DocumentPreview extends StatelessWidget {
         Container(
           height: 200,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.getSurface(context),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: AppColors.getBorder(context)),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
@@ -762,9 +763,9 @@ class _DocumentPreview extends StatelessWidget {
                         const SizedBox(height: 12),
                         Text(
                           file.path.split('/').last,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.textSecondary,
+                            color: AppColors.getTextSecondary(context),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -837,10 +838,10 @@ class _CategorySelector extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? color.withValues(alpha: 0.15)
-                      : AppColors.surface,
+                      : AppColors.getSurface(context),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? color : AppColors.border,
+                    color: isSelected ? color : AppColors.getBorder(context),
                     width: isSelected ? 2 : 1,
                   ),
                 ),
@@ -848,7 +849,7 @@ class _CategorySelector extends StatelessWidget {
                   children: [
                     Icon(
                       category.icon,
-                      color: isSelected ? color : AppColors.textTertiary,
+                      color: isSelected ? color : AppColors.getTextTertiary(context),
                       size: 24,
                     ),
                     const SizedBox(height: 4),
@@ -857,7 +858,7 @@ class _CategorySelector extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                        color: isSelected ? color : AppColors.textSecondary,
+                        color: isSelected ? color : AppColors.getTextSecondary(context),
                       ),
                     ),
                   ],
@@ -902,16 +903,16 @@ class _DateField extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.getSurface(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: AppColors.getBorder(context)),
         ),
         child: Row(
           children: [
             Icon(
               Icons.calendar_today_outlined,
               size: 20,
-              color: date != null ? AppColors.primary : AppColors.textTertiary,
+              color: date != null ? AppColors.primary : AppColors.getTextTertiary(context),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -922,8 +923,8 @@ class _DateField extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   color: date != null
-                      ? AppColors.textPrimary
-                      : AppColors.textTertiary,
+                      ? AppColors.getTextPrimary(context)
+                      : AppColors.getTextTertiary(context),
                 ),
               ),
             ),

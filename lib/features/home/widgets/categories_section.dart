@@ -17,12 +17,12 @@ class CategoriesSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'التصنيفات',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: AppColors.getTextPrimary(context),
             ),
           ),
           const SizedBox(height: 16),
@@ -70,9 +70,9 @@ class CategoriesSection extends ConsumerWidget {
                   width: 76,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: AppColors.getSurface(context),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.surfaceVariant),
+                    border: Border.all(color: AppColors.getSurfaceVariant(context)),
                   ),
                   child: const Center(
                     child: SizedBox(
@@ -123,10 +123,10 @@ class _CategoryCard extends StatelessWidget {
         width: 76,
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.getSurface(context),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.surfaceVariant,
+            color: AppColors.getSurfaceVariant(context),
           ),
         ),
         child: Column(
@@ -147,18 +147,18 @@ class _CategoryCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: AppColors.getTextPrimary(context),
               ),
             ),
             const SizedBox(height: 2),
             Text(
               '$count',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
-                color: AppColors.textTertiary,
+                color: AppColors.getTextTertiary(context),
               ),
             ),
           ],

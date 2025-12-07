@@ -138,7 +138,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       appBar: AppBar(
         title: const Text('إضافة مستند'),
         leading: IconButton(
@@ -153,20 +153,20 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'اختر طريقة الإضافة',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: AppColors.getTextPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'يمكنك التقاط صورة جديدة أو اختيار ملف موجود',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.textSecondary,
+                    color: AppColors.getTextSecondary(context),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -212,20 +212,20 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                       color: AppColors.info.withValues(alpha: 0.3),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.lightbulb_outlined,
                         color: AppColors.info,
                         size: 24,
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'نصيحة: للحصول على أفضل نتيجة، تأكد من إضاءة جيدة ووضع المستند على سطح مستوٍ',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.textSecondary,
+                            color: AppColors.getTextSecondary(context),
                           ),
                         ),
                       ),
@@ -276,10 +276,10 @@ class _AddOptionCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.getSurface(context),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.surfaceVariant,
+              color: AppColors.getSurfaceVariant(context),
             ),
           ),
           child: Row(
@@ -304,26 +304,26 @@ class _AddOptionCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: AppColors.getTextPrimary(context),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: AppColors.getTextSecondary(context),
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_left,
-                color: AppColors.textTertiary,
+                color: AppColors.getTextTertiary(context),
               ),
             ],
           ),
